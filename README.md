@@ -13,7 +13,7 @@ close to a breach waits for analyst approval before it drafts a cited monitoring
 | EDGAR client: ticker lookup, XBRL company facts, annual value selection | Done |
 | MCP server exposing EDGAR as read-only tools | Done |
 | Golden dataset of hand-labeled covenant terms | Schema done, labels in progress |
-| LangGraph workflow with reviewer and human approval | Planned |
+| LangGraph workflow with reviewer and human approval | Done (mocked tests; no live model run yet) |
 | Evals in CI | Planned |
 
 ## Setup
@@ -24,6 +24,7 @@ cp .env.example .env   # add your Anthropic API key and SEC User-Agent
 uv run pytest -q
 uv run python -m covenant_monitor.edgar BSX
 npx @modelcontextprotocol/inspector uv run covenant-monitor-mcp   # browse the MCP tools
+uv run python -m covenant_monitor.agent.run start BSX               # needs ANTHROPIC_API_KEY
 ```
 
 ```

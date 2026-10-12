@@ -77,7 +77,7 @@ class DocumentPage(BaseModel):
 
 class AnnualValue(BaseModel):
     value: float
-    period_start: str
+    period_start: str | None  # null for balance sheet (instant) values
     period_end: str
     form: str
     filed: str
