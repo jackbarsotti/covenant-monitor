@@ -25,16 +25,18 @@ from pathlib import Path
 from dotenv import load_dotenv
 from langgraph.types import Command
 
+from covenant_monitor.agent import tracing
 from covenant_monitor.agent.config import AgentConfig
 from covenant_monitor.agent.graph import build_graph
 from covenant_monitor.agent.llm import AgentStop, Ledger
 from covenant_monitor.agent.nodes import Deps
+from covenant_monitor.agent.pricing import cost_usd
 from covenant_monitor.agent.qa import CheckedAnswer, answer_questions
-from covenant_monitor.agent.run import checkpointer, execute, session
+from covenant_monitor.agent.run import checkpointer, execute, run_summary, session
 from covenant_monitor.evals import judge
-from covenant_monitor.evals.pricing import cost_usd
 from covenant_monitor.evals.scoring import category, score_company
 from covenant_monitor.golden import GOLDEN_DIR, GoldenCompany, load_all
+from covenant_monitor.sec_client import user_agent
 
 RESULTS_DIR = Path("evals/results")
 # Model output varies between runs; allow about one flipped check before calling it a drop.
@@ -117,6 +119,7 @@ async def evaluate_company(golden: GoldenCompany, graph, deps: Deps, judge_trust
         "review": state["review"].model_dump() if state.get("review") else None,
         "relevant_section_ids": state.get("relevant_section_ids", []),
         "usage": [u.model_dump() for u in usage],
+        "summary": run_summary(usage, state.get("timings", [])),
         "cost_usd": cost_usd(usage),
     }
 
@@ -143,7 +146,12 @@ async def run_evals(
         companies = {}
         for ticker, golden in goldens.items():
             company_deps = Deps(deps.llm, deps.tools, config, Ledger(config))
-            companies[ticker] = await evaluate_company(golden, graph, company_deps, cal["trusted"])
+            with tracing.span(f"eval {ticker}", "CHAIN", eval__ticker=ticker) as span:
+                companies[ticker] = await evaluate_company(
+                    golden, graph, company_deps, cal["trusted"]
+                )
+                result = companies[ticker]
+                tracing.set_attributes(span, output__value=f"{result['passed']}/{result['total']}")
 
     return {
         "started_at": started,
@@ -198,7 +206,11 @@ def print_summary(results: dict) -> None:
     j = results["judge"]
     print(f"judge agreement {j['agreement']:.0%} ({'trusted' if j['trusted'] else 'NOT trusted'})")
     for ticker, r in results["companies"].items():
-        print(f"\n{ticker}: {r['passed']}/{r['total']}  status={r['status']}  ${r['cost_usd']:.2f}")
+        seconds = r.get("summary", {}).get("totals", {}).get("seconds", 0)
+        print(
+            f"\n{ticker}: {r['passed']}/{r['total']}  status={r['status']}  "
+            f"${r['cost_usd']:.2f}  {seconds:.0f}s in nodes"
+        )
         for c in r["checks"]:
             if not c["passed"]:
                 print(f"  FAIL {c['name']}: {c['detail']}")
@@ -232,10 +244,20 @@ async def main(argv: list[str] | None = None) -> int:
         out = args.out or args.rescore.with_name(args.rescore.stem + "-rescored.json")
     else:
         load_dotenv()
+        try:
+            user_agent()  # fail here with one clear line, not inside the MCP subprocess
+        except RuntimeError as e:
+            print(f"error: {e}")
+            return 2
         goldens = load_all(GOLDEN_DIR)
         if args.tickers:
             goldens = {t: goldens[t] for t in (x.upper() for x in args.tickers)}
-        results = await run_evals(AgentConfig(), goldens)
+        provider = tracing.setup()
+        try:
+            results = await run_evals(AgentConfig(), goldens)
+        finally:
+            if provider:
+                provider.shutdown()
         out = args.out or RESULTS_DIR / f"{results['started_at'].replace(':', '')}.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(results, indent=2, default=str))

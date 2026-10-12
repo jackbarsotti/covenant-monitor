@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 
 from mcp import Client, StdioServerParameters
 
+from covenant_monitor.agent import tracing
 from covenant_monitor.agent.llm import AgentStop
 
 
@@ -18,11 +19,14 @@ class EdgarTools:
         self.client = client
 
     async def call(self, name: str, **arguments) -> dict:
-        result = await self.client.call_tool(name, arguments)
-        if result.is_error:
-            text = " ".join(getattr(c, "text", "") for c in result.content).strip()
-            raise AgentStop(f"{name} failed: {text or 'no details'}")
-        return result.structured_content
+        with tracing.span(f"tool {name}", "TOOL", tool__name=name, input__value=arguments) as span:
+            result = await self.client.call_tool(name, arguments)
+            if result.is_error:
+                text = " ".join(getattr(c, "text", "") for c in result.content).strip()
+                tracing.mark_error(span, text)
+                raise AgentStop(f"{name} failed: {text or 'no details'}")
+            tracing.set_attributes(span, output__value=result.structured_content)
+            return result.structured_content
 
 
 @asynccontextmanager

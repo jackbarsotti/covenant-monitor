@@ -1,6 +1,7 @@
 """Graph nodes. Each node writes only the state fields listed in NODE_WRITES."""
 
 import json
+import time
 from dataclasses import dataclass
 from datetime import date
 from typing import Annotated, Any, TypedDict
@@ -8,7 +9,7 @@ from typing import Annotated, Any, TypedDict
 from langgraph.runtime import Runtime
 from langgraph.types import interrupt
 
-from covenant_monitor.agent import memo, prompts, ratios
+from covenant_monitor.agent import memo, prompts, ratios, tracing
 from covenant_monitor.agent.config import AgentConfig
 from covenant_monitor.agent.llm import LLM, AgentStop, Ledger, Meter
 from covenant_monitor.agent.models import (
@@ -20,6 +21,7 @@ from covenant_monitor.agent.models import (
     Financials,
     Memo,
     MemoDraft,
+    NodeTiming,
     RatioResult,
     ReviewResult,
     ReviewVerdicts,
@@ -62,6 +64,7 @@ class State(TypedDict, total=False):
     memo: Memo
     # bookkeeping any node may write
     usage: Annotated[list[UsageRecord], _concat]
+    timings: Annotated[list[NodeTiming], _concat]
     stopped: Annotated[str | None, _first_stop]
 
 
@@ -77,7 +80,7 @@ NODE_WRITES: dict[str, set[str]] = {
     "human_approval": {"approval"},
     "draft_memo": {"memo"},
 }
-ALWAYS_WRITABLE = {"usage", "stopped"}
+ALWAYS_WRITABLE = {"usage", "stopped", "timings"}
 
 
 @dataclass
@@ -89,7 +92,8 @@ class Deps:
 
 
 def node(name: str):
-    """Wraps a node: budget meter, stop handling, usage recording, and the write check."""
+    """Wraps a node: budget meter, stop handling, usage and timing records, a trace span,
+    and the write check."""
 
     def wrap(fn):
         async def run(state: dict, runtime: Runtime[Deps]) -> dict:
@@ -98,10 +102,19 @@ def node(name: str):
             deps = runtime.context
             deps.ledger.seed(state.get("usage", []))
             meter = deps.ledger.meter(name) if name in deps.config.budgets else None
-            try:
-                out = await fn(state, deps, meter)
-            except AgentStop as e:
-                out = {"stopped": str(e)}
+            with tracing.span(name, "CHAIN", graph__node__id=name) as span:
+                started = time.perf_counter()
+                try:
+                    out = await fn(state, deps, meter)
+                except AgentStop as e:
+                    tracing.mark_error(span, str(e))
+                    out = {"stopped": str(e)}
+                seconds = round(time.perf_counter() - started, 3)
+                tracing.set_attributes(span, output__value=sorted(set(out) - {"usage"}))
+            out = {
+                **out,
+                "timings": [NodeTiming(node=name, seconds=seconds, stopped="stopped" in out)],
+            }
             if meter and meter.records:
                 out = {**out, "usage": meter.records}
             extra = set(out) - NODE_WRITES[name] - ALWAYS_WRITABLE

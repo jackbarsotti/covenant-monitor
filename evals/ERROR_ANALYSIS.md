@@ -21,3 +21,9 @@ re-running. Categories: extraction, review, ratio inputs, scoring, labels, Q&A, 
 - Score 100% (47/47) on run 3, rescored with the final scoring code. Cost $3.39 per full run.
 - Known gaps still visible in details: STX misses 2 of 24 add-backs. Three companies is a small set; the next labels should target cases the agent hasn't seen (covenant holidays, springing tests, EBITDA floors).
 - Scoring changes in run 3 fix representation mismatches, not agent behavior. Each is covered by a unit test, including one that guards against matching on generic words.
+
+## Open findings outside the eval score
+
+| Found in | Company | Issue | Category | Proposed fix | Status |
+|---|---|---|---|---|---|
+| Live CLI run, 2026-10-12 | BSX | The Opus reviewer rejects dated step-ups because each date is derived from the "deemed in effect" clause and isn't written verbatim in a quote. The run goes to a human after 3 extraction attempts. Evals don't catch it: they auto-approve and score the extraction, which was correct. | review | Let a threshold cite the rule it was derived from (the deeming clause plus the acquisition date) and have code compute the dates, so the reviewer checks the rule instead of a date it can't see. | Open |

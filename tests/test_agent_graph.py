@@ -66,7 +66,16 @@ async def test_happy_path_drafts_a_cited_memo(tools, edgar, tmp_path):
     assert "headroom of +0.75x" in memo
     assert "## Sources" in memo and "`c0.ratio`: 3.00x" in memo
     assert "add-backs are not applied" in llm.calls["draft_memo"][0]["prompt"]
-    assert set(out["usage"]) == {"map_sections", "extract_covenants", "review", "draft_memo"}
+    usage = out["usage"]
+    model_nodes = {n for n, row in usage.items() if n != "totals" and row["calls"]}
+    assert model_nodes == {"map_sections", "extract_covenants", "review", "draft_memo"}
+    # every node is timed, including code-only ones
+    assert {"resolve_company", "fetch_agreement", "compute_ratios"} <= set(usage)
+    assert all(row["runs"] >= 1 for n, row in usage.items() if n != "totals")
+    assert usage["totals"]["calls"] == sum(
+        row["calls"] for n, row in usage.items() if n != "totals"
+    )
+    assert usage["totals"]["cost_usd"] > 0
     # models come from config, and the agreement text is passed as the cached document
     assert llm.calls["review"][0]["model"] == "claude-opus-5-5"
     assert "<section id='7.1'>" in llm.calls["extract_covenants"][0]["document"]
