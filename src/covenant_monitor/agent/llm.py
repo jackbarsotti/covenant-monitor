@@ -5,12 +5,14 @@ node has used its call allowance, and stops the run once the node's tokens pass 
 Usage is also written into graph state, so a resumed run picks up where the totals were.
 """
 
+import time
 from collections import defaultdict
 from typing import Protocol, TypeVar
 
 import anthropic
 from pydantic import BaseModel
 
+from covenant_monitor.agent import tracing
 from covenant_monitor.agent.config import AgentConfig
 from covenant_monitor.agent.models import UsageRecord
 
@@ -129,26 +131,54 @@ class AnthropicLLM:
             request["output_config"] = {"effort": effort}
 
         meter.before_call()
-        if model in FALLBACK_MODELS:
-            response = await self.client.beta.messages.parse(
-                **request, betas=[FALLBACK_BETA], fallbacks="default"
-            )
-        else:
-            response = await self.client.messages.parse(**request)
+        with tracing.span(
+            f"llm {meter.node}",
+            "LLM",
+            llm__provider="anthropic",
+            llm__model_name=model,
+            llm__invocation_parameters={"effort": effort, "max_tokens": MAX_TOKENS},
+            input__value=prompt,
+        ) as span:
+            started = time.perf_counter()
+            if model in FALLBACK_MODELS:
+                response = await self.client.beta.messages.parse(
+                    **request, betas=[FALLBACK_BETA], fallbacks="default"
+                )
+            else:
+                response = await self.client.messages.parse(**request)
+            seconds = time.perf_counter() - started
 
-        u = response.usage
-        meter.after_call(
-            UsageRecord(
+            u = response.usage
+            record = UsageRecord(
                 node=meter.node,
                 model=response.model,
                 input_tokens=u.input_tokens,
                 output_tokens=u.output_tokens,
                 cache_read_tokens=u.cache_read_input_tokens or 0,
                 cache_write_tokens=u.cache_creation_input_tokens or 0,
+                seconds=round(seconds, 3),
             )
-        )
-        if response.stop_reason == "refusal":
-            raise AgentStop(f"{meter.node}: the model declined the request")
-        if response.stop_reason == "max_tokens" or response.parsed_output is None:
-            raise AgentStop(f"{meter.node}: the model's answer was cut off or unparseable")
-        return response.parsed_output
+            prompt_tokens = (
+                record.input_tokens + record.cache_read_tokens + record.cache_write_tokens
+            )
+            tracing.set_attributes(
+                span,
+                llm__served_model=response.model,  # differs from model after a fallback
+                llm__token_count__prompt=prompt_tokens,
+                llm__token_count__completion=record.output_tokens,
+                llm__token_count__total=prompt_tokens + record.output_tokens,
+                llm__token_count__prompt_details__cache_read=record.cache_read_tokens,
+                llm__token_count__prompt_details__cache_write=record.cache_write_tokens,
+                llm__stop_reason=response.stop_reason,
+                output__value=(
+                    response.parsed_output.model_dump_json() if response.parsed_output else None
+                ),
+            )
+            meter.after_call(record)
+            if response.stop_reason == "refusal":
+                tracing.mark_error(span, "refusal")
+                raise AgentStop(f"{meter.node}: the model declined the request")
+            if response.stop_reason == "max_tokens" or response.parsed_output is None:
+                tracing.mark_error(span, "cut off or unparseable")
+                raise AgentStop(f"{meter.node}: the model's answer was cut off or unparseable")
+            return response.parsed_output

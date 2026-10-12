@@ -143,3 +143,20 @@ Rules settled while verifying the first three companies. Future labels follow th
   by more than its tolerance (0.025, about one check), since model output varies run to run.
 - `--rescore` re-scores a saved run from the eval checkpoint database with no model calls.
   Scoring-only fixes are verified that way instead of paying for a new run.
+
+## 014: Arize Phoenix for tracing, with our own spans
+
+Phoenix runs locally with one command and needs no account, so traces work on any machine
+and in CI without new secrets. Langfuse would need either a cloud account and keys or a
+self-hosted stack (Postgres, ClickHouse, Redis). Both accept OpenTelemetry, so switching
+later means changing the exporter, not the spans.
+
+Spans are written by our own wrappers, not auto-instrumentation: a root span per run, one
+per graph node, one per model call, and one per MCP tool call, using OpenInference attribute
+names so Phoenix shows models, tokens, inputs, and outputs. The instrumentation packages
+patch SDK internals and may miss `beta.messages.parse` with fallbacks; the LangGraph one
+traces through LangChain callbacks. Ours covers exactly the calls we make. Tracing is off
+unless PHOENIX_COLLECTOR_ENDPOINT is set; tests use an in-memory exporter.
+
+Every node also records its own timing in state, so the run summary (calls, tokens,
+estimated cost, seconds per node) works with or without a tracing backend.

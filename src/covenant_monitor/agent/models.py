@@ -163,6 +163,7 @@ class UsageRecord(BaseModel):
     output_tokens: int
     cache_read_tokens: int = 0
     cache_write_tokens: int = 0
+    seconds: float = 0.0
 
     @property
     def total(self) -> int:
@@ -172,3 +173,9 @@ class UsageRecord(BaseModel):
             + self.cache_read_tokens
             + self.cache_write_tokens
         )
+
+
+class NodeTiming(BaseModel):
+    node: str
+    seconds: float
+    stopped: bool = False

@@ -42,7 +42,10 @@ def user_agent() -> str:
     load_dotenv()
     ua = os.getenv("SEC_USER_AGENT", "").strip()
     if not re.fullmatch(r"\S.*\s+\S+@\S+\.\S+", ua):
-        raise RuntimeError('Set SEC_USER_AGENT in .env, e.g. "Jane Doe jane@example.com"')
+        raise RuntimeError(
+            'SEC_USER_AGENT must be a name and an email, e.g. "Jane Doe jane@example.com". '
+            "Set it in .env locally, or as a repository secret in CI."
+        )
     return ua
 
 

@@ -15,6 +15,7 @@ close to a breach waits for analyst approval before it drafts a cited monitoring
 | Golden dataset: BSX, STX, CACI (AI-drafted, AI-verified) | Done |
 | LangGraph workflow with reviewer and human approval | Done |
 | Evals: 100% (47/47) on 3 golden companies, manual CI trigger | Done |
+| Tracing in Arize Phoenix; per-node cost, tokens, and latency | Done |
 
 ## Setup
 
@@ -31,6 +32,13 @@ uv run python -m covenant_monitor.agent.run start BSX               # needs ANTH
 BOSTON SCIENTIFIC CORPORATION (CIK 0000885725)
 us-gaap concepts reported: 750
 OperatingIncomeLoss, FY ending 2025-12-31: $3,613,000,000
+```
+
+Traces (optional):
+
+```bash
+uvx --from arize-phoenix phoenix serve                             # UI at http://localhost:6006
+PHOENIX_COLLECTOR_ENDPOINT=http://localhost:6006 uv run python -m covenant_monitor.agent.run start BSX
 ```
 
 ## Design
