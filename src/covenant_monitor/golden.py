@@ -1,8 +1,8 @@
-"""Golden dataset: schema and loader for the hand-labeled covenant files.
+"""Golden dataset: schema and loader for the labeled covenant files.
 
-Labels in data/golden/ are written by hand from the source documents. This module only
-checks their shape, so a typo is caught before an eval run scores against it. It never
-fills in or recomputes a label. Files starting with "_" (the template) are skipped.
+Labels in data/golden/ come from the source documents. This module only checks their shape,
+so a typo is caught before an eval run scores against it. It never fills in or recomputes a
+label. Files starting with "_" (the template) are skipped.
 
     uv run python -m covenant_monitor.golden
 """
@@ -11,7 +11,7 @@ import sys
 from datetime import date
 from enum import StrEnum
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 import yaml
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, ValidationError, model_validator
@@ -150,7 +150,12 @@ class Question(Strict):
         return self
 
 
+Provenance = Literal["hand", "ai_drafted_human_verified", "ai_drafted_ai_verified"]
+
+
 class GoldenCompany(Strict):
+    # How the labels were made, so eval reports can weight AI-checked labels accordingly.
+    provenance: Provenance
     company: Company
     agreement: AgreementSource
     covenants: list[Covenant] = Field(min_length=1)

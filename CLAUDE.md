@@ -17,11 +17,16 @@ a human for approval first.
 - Tests must not hit the network. Mock HTTP with respx.
 - Explain a change before making it. Keep diffs small.
 - Record design choices in DECISIONS.md.
-- Golden labels in `data/golden/` are written by hand. Never create or change label values.
+- Golden labels in `data/golden/` come from source documents only. One agent drafts them; a
+  separate agent with fresh context verifies every value and never edits. Each file records
+  its provenance. Never change a verified value without re-verifying it.
 
 ## Workflow
 - Build in the order in `docs/ROADMAP.md`, one step at a time.
-- When a step's "Done when" checks pass, stop. Summarize the diff for review before committing.
+- Work on a branch. When a step's "Done when" checks pass, commit, push, open a PR with the
+  diff summary in the body, and turn on auto-merge. GitHub merges it when CI is green.
+- Write all PR text, commit messages, and messages to the user in tactical style: bottom line
+  first, short sentences, bullets.
 - Commit messages: short imperative subject line, blank line, bullets on what changed and why.
   No "WIP", "scaffold", or "step N" wording.
 - Push only after CI-equivalent checks pass locally: ruff check, ruff format --check, pytest.

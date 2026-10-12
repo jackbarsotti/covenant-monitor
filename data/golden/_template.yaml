@@ -1,7 +1,9 @@
-# Golden label template. Copy to <TICKER>.yaml (e.g. BSX.yaml) and fill in by hand from
-# the source documents. Check it with: uv run python -m covenant_monitor.golden
+# Golden label template. Copy to <TICKER>.yaml (e.g. BSX.yaml) and fill in from the source
+# documents. Check it with: uv run python -m covenant_monitor.golden
 #
 # Ratios are plain numbers: 3.5 means 3.50 to 1.00. Money is in USD, no commas.
+
+provenance:          # hand | ai_drafted_human_verified | ai_drafted_ai_verified
 
 company:
   ticker:            # e.g. BSX

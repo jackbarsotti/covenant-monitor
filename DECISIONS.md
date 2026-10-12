@@ -86,3 +86,17 @@ has several. Evals pass the golden agreement URL so scoring never depends on tha
 Sonnet and Opus calls opt into server-side refusal fallbacks (`fallbacks: "default"`), so a
 false-positive refusal reroutes instead of failing the run; Haiku has no fallback, and any
 refusal that remains stops the run with a reason.
+
+## 011: AI-drafted, AI-verified golden labels
+
+Hand labeling is the gold standard but was blocking progress. Labels are now drafted by one
+agent from the source documents and checked field by field by a second agent with fresh
+context that can only report, never edit. Each file records `provenance`, so eval reports
+can show which scores rest on AI-checked labels.
+
+The risk is circularity: the system under test is also Claude, so shared blind spots can
+pass both the labels and the agent. Mitigations: every label quotes the agreement verbatim
+and cites the section; expected ratios are computed in code from cited 10-K figures, not by
+the model; the verifier re-derives each value from the source rather than reading the
+draft's reasoning; and trap questions are checked against the full agreement. Any label a
+person later checks moves to `ai_drafted_human_verified`.
