@@ -43,3 +43,12 @@ The roadmap says FastMCP, but mcp 2.x renamed FastMCP to `MCPServer` and changed
 APIs. I'm on 2.3, so the server uses `MCPServer` instead of pinning `mcp<2`. Anticipated
 failures raise `ToolError` with a short message. Anything else reaches the model only as
 "Error executing tool X", and the traceback stays in the server log.
+
+## 006: Golden labels in YAML, checked by a strict schema
+
+The golden files are written by hand, so the format has to be easy to type and allow
+comments next to the numbers they explain. YAML does both; JSON does neither. Each file is
+validated by a pydantic schema that rejects unknown keys, so a misspelled field fails
+instead of being silently dropped. The loader checks shape only: counts, formats, date
+order, and that every expected result names a covenant. It never recomputes the expected
+ratios, because those are the labels the ratio code gets scored against.

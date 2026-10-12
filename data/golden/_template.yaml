@@ -1,0 +1,68 @@
+# Golden label template. Copy to <TICKER>.yaml (e.g. BSX.yaml) and fill in by hand from
+# the source documents. Check it with: uv run python -m covenant_monitor.golden
+#
+# Ratios are plain numbers: 3.5 means 3.50 to 1.00. Money is in USD, no commas.
+
+company:
+  ticker:            # e.g. BSX
+  cik:               # integer, no leading zeros needed
+  name:
+
+agreement:
+  accession:         # 0000000000-00-000000
+  exhibit:           # e.g. EX-10.1
+  url:               # https://www.sec.gov/Archives/edgar/data/...
+  agreement_date:    # YYYY-MM-DD
+  amendments: []     # each: {accession, exhibit, url, amendment_date}
+
+covenants:
+  - type:            # max_leverage | max_secured_leverage | min_interest_coverage |
+                     # min_fixed_charge_coverage | min_net_worth | other
+    description:     # the covenant's name in the agreement
+    thresholds:      # first step has effective_from: null; step-downs follow in date order
+      - ratio:
+        effective_from:
+    test_frequency:  # quarterly | semi_annual | annual | springing
+    section:         # e.g. Section 7.11(a)
+    quote: >-
+      Verbatim covenant text from the agreement.
+
+ebitda_addbacks:
+  - name:
+    section:
+    cap:             # as written, e.g. "15% of EBITDA", or null if uncapped
+
+latest_fiscal_year:
+  period_end:        # YYYY-MM-DD
+  inputs:            # one entry per number the ratio needs
+    ebitda:
+      value:
+      source:        # us-gaap concept, or how you derived it
+      accession:     # filing the number came from, or null
+  expected:          # one per covenant tested on this year
+    - covenant:      # a type listed under covenants
+      ratio:
+      threshold:
+      headroom:      # signed: positive means inside the covenant
+
+questions:           # exactly 5, exactly 2 with trap: true
+  - question:
+    trap: false
+    answer:
+    section:
+  - question:
+    trap: false
+    answer:
+    section:
+  - question:
+    trap: false
+    answer:
+    section:
+  - question:        # the answer is not in the agreement
+    trap: true
+    answer: null
+    section: null
+  - question:
+    trap: true
+    answer: null
+    section: null

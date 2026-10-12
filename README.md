@@ -12,7 +12,7 @@ close to a breach waits for analyst approval before it drafts a cited monitoring
 |---|---|
 | EDGAR client: ticker lookup, XBRL company facts, annual value selection | Done |
 | MCP server exposing EDGAR as read-only tools | Done |
-| Golden dataset of hand-labeled covenant terms | Planned |
+| Golden dataset of hand-labeled covenant terms | Schema done, labels in progress |
 | LangGraph workflow with reviewer and human approval | Planned |
 | Evals in CI | Planned |
 
