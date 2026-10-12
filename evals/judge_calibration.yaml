@@ -1,0 +1,170 @@
+# Judge calibration set: memos that are faithful or unfaithful to their facts table by
+# construction. Each unfaithful memo contains exactly one planted unsupported claim (noted
+# in `why`). The eval runner measures the judge's agreement with `expected` before any of
+# its memo verdicts count. Companies and numbers are made up.
+
+facts_single: &single
+  ebitda_basis: EBITDA is reported operating income plus depreciation and amortization from XBRL filings; the agreement's add-backs are not applied, so ratios approximate the covenant definitions
+  company: EXAMPLE CORP
+  agreement_accession: 0000000001-26-000001
+  agreement_exhibit: EX-10.1
+  agreement_filed: "2026-02-01"
+  agreement_url: https://www.sec.gov/Archives/edgar/data/1/000000000126000001/ex101.htm
+  c0.name: Leverage Ratio
+  c0.section: "7.1"
+  c0.ratio: 3.00x
+  c0.threshold: 3.75x
+  c0.headroom: +0.75x
+  c0.headroom_pct: +20.0%
+  c0.period_end: "2025-12-31"
+  c0.numerator: $3,000,000,000
+  c0.denominator: $1,000,000,000
+  c0.LongTermDebt: $3,000,000,000 (accession 0000000001-26-000010)
+  c0.OperatingIncomeLoss: $800,000,000 (accession 0000000001-26-000010)
+  c0.DepreciationDepletionAndAmortization: $200,000,000 (accession 0000000001-26-000010)
+
+facts_two: &two
+  ebitda_basis: EBITDA is reported operating income plus depreciation and amortization from XBRL filings; the agreement's add-backs are not applied, so ratios approximate the covenant definitions
+  company: SAMPLE HOLDINGS INC
+  agreement_accession: 0000000002-25-000003
+  agreement_exhibit: EX-10.2
+  agreement_filed: "2025-06-15"
+  agreement_url: https://www.sec.gov/Archives/edgar/data/2/000000000225000003/ex102.htm
+  c0.name: Consolidated Net Leverage Ratio
+  c0.section: "6.12(a)"
+  c0.ratio: 4.10x
+  c0.threshold: 4.50x
+  c0.headroom: +0.40x
+  c0.headroom_pct: +8.9%
+  c0.period_end: "2026-03-31"
+  c0.numerator: $4,100,000,000
+  c0.denominator: $1,000,000,000
+  c1.name: Consolidated Secured Leverage Ratio
+  c1.section: "6.12(b)"
+  c1.reason: secured debt is not available from XBRL filings
+  approval_decision: approve
+  approval_note: confirmed with the credit desk
+
+cases:
+  - id: faithful-basic
+    expected: true
+    why: every claim is in the facts table
+    facts: *single
+    memo: |
+      # Covenant review: EXAMPLE CORP
+
+      We reviewed EX-10.1, filed 2026-02-01 under accession 0000000001-26-000001.
+
+      The Leverage Ratio (Section 7.1) was 3.00x for the period ending 2025-12-31, against a
+      maximum of 3.75x, leaving headroom of +0.75x (+20.0% of the threshold). Debt of
+      $3,000,000,000 was divided by EBITDA of $1,000,000,000.
+
+      EBITDA was computed from reported operating income plus depreciation and amortization,
+      without the agreement's add-backs, so the covenant-defined ratio may differ.
+
+  - id: faithful-terse
+    expected: true
+    why: short, every number traced
+    facts: *single
+    memo: |
+      # EXAMPLE CORP leverage covenant
+
+      Leverage Ratio: 3.00x against a 3.75x maximum (Section 7.1), headroom +0.75x, as of
+      2025-12-31. Source agreement: EX-10.1, accession 0000000001-26-000001. EBITDA excludes
+      the agreement's add-backs, so this approximates the defined ratio.
+
+  - id: faithful-uncomputable-and-approval
+    expected: true
+    why: reports the uncomputable covenant and the approval note as given
+    facts: *two
+    memo: |
+      # Covenant review: SAMPLE HOLDINGS INC
+
+      Agreement: EX-10.2, filed 2025-06-15, accession 0000000002-25-000003.
+
+      The Consolidated Net Leverage Ratio (Section 6.12(a)) was 4.10x at 2026-03-31 against a
+      maximum of 4.50x, headroom +0.40x (+8.9%). The Consolidated Secured Leverage Ratio
+      (Section 6.12(b)) could not be computed: secured debt is not available from XBRL
+      filings.
+
+      An analyst approved this review with the note "confirmed with the credit desk".
+      EBITDA was computed without the agreement's add-backs.
+
+  - id: faithful-plain
+    expected: true
+    why: restates facts without adding judgments
+    facts: *two
+    memo: |
+      # SAMPLE HOLDINGS INC
+
+      Net leverage was 4.10x versus a 4.50x maximum under Section 6.12(a) of EX-10.2
+      (accession 0000000002-25-000003), for the period ending 2026-03-31. Headroom was +0.40x.
+      Secured leverage was not computed because secured debt is not available from XBRL
+      filings. Reported EBITDA was used, without add-backs. Decision: approve.
+
+  - id: faithful-sources
+    expected: true
+    why: lists input figures with their accessions
+    facts: *single
+    memo: |
+      # Covenant review: EXAMPLE CORP
+
+      Leverage Ratio (Section 7.1): 3.00x at 2025-12-31, maximum 3.75x, headroom +0.75x.
+      Inputs: long-term debt $3,000,000,000, operating income $800,000,000, and depreciation
+      and amortization $200,000,000, all from accession 0000000001-26-000010. Agreement
+      add-backs were not applied.
+
+  - id: unfaithful-breach
+    expected: false
+    why: calls the covenant breached although headroom is positive
+    facts: *single
+    memo: |
+      # Covenant review: EXAMPLE CORP
+
+      The Leverage Ratio (Section 7.1) was 3.00x at 2025-12-31 against a maximum of 3.75x.
+      The company is in breach of this covenant and an event of default has occurred.
+      EBITDA excludes the agreement's add-backs.
+
+  - id: unfaithful-addbacks-applied
+    expected: false
+    why: claims the agreement's add-backs were applied
+    facts: *single
+    memo: |
+      # Covenant review: EXAMPLE CORP
+
+      The Leverage Ratio (Section 7.1) was 3.00x at 2025-12-31 against a maximum of 3.75x,
+      headroom +0.75x. EBITDA reflects all add-backs permitted by the agreement, so this is
+      the covenant-defined ratio.
+
+  - id: unfaithful-invented-covenant
+    expected: false
+    why: reports an interest coverage covenant that is not in the facts
+    facts: *single
+    memo: |
+      # Covenant review: EXAMPLE CORP
+
+      The Leverage Ratio (Section 7.1) was 3.00x against a maximum of 3.75x, headroom +0.75x,
+      at 2025-12-31. Interest coverage was 9.2x against a 3.00x minimum. EBITDA excludes the
+      agreement's add-backs.
+
+  - id: unfaithful-wrong-number
+    expected: false
+    why: states the ratio as 3.40x; the facts say 3.00x
+    facts: *single
+    memo: |
+      # Covenant review: EXAMPLE CORP
+
+      The Leverage Ratio (Section 7.1) was 3.40x at 2025-12-31 against a maximum of 3.75x.
+      EBITDA was computed without the agreement's add-backs.
+
+  - id: unfaithful-outside-claim
+    expected: false
+    why: adds a refinancing and waiver claim with no support in the facts
+    facts: *two
+    memo: |
+      # Covenant review: SAMPLE HOLDINGS INC
+
+      Net leverage (Section 6.12(a)) was 4.10x against 4.50x at 2026-03-31, headroom +0.40x.
+      Secured leverage could not be computed because secured debt is not available from XBRL
+      filings. Management has obtained a covenant waiver from the lenders and plans to
+      refinance the facility next quarter. EBITDA excludes add-backs.

@@ -116,3 +116,30 @@ Rules settled while verifying the first three companies. Future labels follow th
   A cap holds an amount limit only; conditions go in the name.
 - Ratio inputs are as-reported 10-K XBRL values for the same fiscal year end, debt at
   carrying amount, no agreement add-backs.
+
+## 013: Eval design
+
+- Binary checks only, except memo faithfulness. Each golden covenant is checked for:
+  found, threshold in effect at fiscal year end, full step schedule, test frequency, and
+  ratio within 0.01x. Also the add-back set, every extracted quote verbatim in the
+  agreement, and five questions per company. Score = checks passed / checks run.
+- Questions use a small Q&A function, not a graph node: the whole agreement is one cached
+  document and the model must answer "not found" when the text doesn't say. A normal
+  question passes when it cites the labeled section number with a verbatim quote; a trap
+  passes when it says not found. Answer wording is not graded.
+- Add-backs are compared as sets by word overlap between names: an extracted item counts if
+  it matches any labeled add-back, and a label counts if any item matches it. Plurals are
+  stemmed and generic words ("costs", "charges") ignored. Passes at precision and recall of
+  0.8 or more. Splitting one clause into parts is not penalized; precision and recall are
+  reported so error analysis can see near misses.
+- Threshold schedules match when they give the same limit on every date either one changes,
+  so two encodings of one schedule compare equal.
+- The memo judge (Opus) is calibrated every run on memos built to be faithful or not, each
+  unfaithful one with one planted unsupported claim. Its memo verdicts count only at 90%
+  agreement or better.
+- A human pause is auto-approved during evals so every run reaches a memo.
+- CI runs evals only on manual trigger, with the API key and SEC User-Agent as repo
+  secrets, uploads the results JSON, and fails if the score drops below evals/baseline.json
+  by more than its tolerance (0.025, about one check), since model output varies run to run.
+- `--rescore` re-scores a saved run from the eval checkpoint database with no model calls.
+  Scoring-only fixes are verified that way instead of paying for a new run.

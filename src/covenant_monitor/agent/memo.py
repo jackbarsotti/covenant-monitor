@@ -26,6 +26,11 @@ def build_facts(
         "agreement_exhibit": agreement.exhibit_type,
         "agreement_filed": agreement.filed,
         "agreement_url": agreement.url,
+        "ebitda_basis": (
+            "EBITDA is reported operating income plus depreciation and amortization from "
+            "XBRL filings; the agreement's add-backs are not applied, so ratios approximate "
+            "the covenant definitions"
+        ),
     }
     for r in ratios:
         p = f"c{r.covenant_index}"

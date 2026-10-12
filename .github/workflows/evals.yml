@@ -1,0 +1,34 @@
+name: evals
+
+# Live evals cost money (Anthropic API), so they run only on manual trigger.
+on:
+  workflow_dispatch:
+    inputs:
+      tickers:
+        description: "Tickers to evaluate (space separated); blank for all golden companies"
+        required: false
+        default: ""
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - name: Run evals and compare to baseline
+        run: |
+          args=""
+          if [ -n "${{ inputs.tickers }}" ]; then args="--tickers ${{ inputs.tickers }}"; fi
+          uv run python -m covenant_monitor.evals.runner --out evals/results/ci.json $args
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-results
+          path: evals/results/ci.json
+          if-no-files-found: warn

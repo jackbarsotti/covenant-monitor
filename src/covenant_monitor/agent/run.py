@@ -12,9 +12,15 @@ from collections import defaultdict
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+import aiosqlite
+from dotenv import load_dotenv
+from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 from langgraph.types import Command
+from pydantic import BaseModel
 
+from covenant_monitor import golden
+from covenant_monitor.agent import models
 from covenant_monitor.agent.config import AgentConfig
 from covenant_monitor.agent.graph import build_graph
 from covenant_monitor.agent.llm import LLM, AnthropicLLM, Ledger
@@ -22,6 +28,20 @@ from covenant_monitor.agent.nodes import Deps
 from covenant_monitor.agent.tools import EdgarTools, stdio_tools
 
 DB_PATH = Path("data/runs.sqlite")
+
+# Types the checkpointer may rebuild from saved state. LangGraph will refuse unlisted types.
+STATE_TYPES = [
+    (cls.__module__, cls.__name__)
+    for cls in vars(models).values()
+    if isinstance(cls, type) and issubclass(cls, BaseModel) and cls.__module__ == models.__name__
+] + [(golden.__name__, "CovenantType"), (golden.__name__, "TestFrequency")]
+
+
+@asynccontextmanager
+async def checkpointer(db_path: Path):
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    async with aiosqlite.connect(str(db_path)) as conn:
+        yield AsyncSqliteSaver(conn, serde=JsonPlusSerializer(allowed_msgpack_modules=STATE_TYPES))
 
 
 async def execute(graph, deps: Deps, thread_id: str, graph_input) -> dict:
@@ -64,8 +84,7 @@ async def session(
     llm: LLM | None = None,
     tools: EdgarTools | None = None,
 ):
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    async with AsyncSqliteSaver.from_conn_string(str(db_path)) as saver:
+    async with checkpointer(db_path) as saver:
         graph = build_graph(config, checkpointer=saver)
         if tools is not None:
             yield graph, Deps(llm or AnthropicLLM(), tools, config, Ledger(config))
@@ -87,6 +106,7 @@ async def main(argv: list[str] | None = None) -> None:
     resume.add_argument("--threshold", action="append", default=[], metavar="INDEX=VALUE")
     args = parser.parse_args(argv)
 
+    load_dotenv()  # ANTHROPIC_API_KEY for the SDK; the MCP subprocess reads SEC settings itself
     config = AgentConfig()
     async with session(config) as (graph, deps):
         if args.cmd == "start":

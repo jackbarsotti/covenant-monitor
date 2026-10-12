@@ -13,8 +13,8 @@ close to a breach waits for analyst approval before it drafts a cited monitoring
 | EDGAR client: ticker lookup, XBRL company facts, annual value selection | Done |
 | MCP server exposing EDGAR as read-only tools | Done |
 | Golden dataset: BSX, STX, CACI (AI-drafted, AI-verified) | Done |
-| LangGraph workflow with reviewer and human approval | Done (mocked tests; no live model run yet) |
-| Evals in CI | Planned |
+| LangGraph workflow with reviewer and human approval | Done |
+| Evals: 100% (47/47) on 3 golden companies, manual CI trigger | Done |
 
 ## Setup
 

@@ -10,7 +10,8 @@ from datetime import date
 from covenant_monitor.agent.models import Approval, ExtractedCovenant, Fact, RatioResult
 from covenant_monitor.golden import CovenantType
 
-# First concept present wins.
+# Companies tag D&A several ways, and some tag a depreciation-only figure under a D&A
+# name. Total D&A is at least as large as any part, so the largest candidate wins.
 DA = [
     "DepreciationDepletionAndAmortization",
     "DepreciationAndAmortization",
@@ -27,6 +28,8 @@ CONCEPTS = sorted(
     {
         "OperatingIncomeLoss",
         "LongTermDebt",
+        "Depreciation",
+        "AmortizationOfIntangibleAssets",
         *NONCURRENT,
         *CURRENT,
         *DA,
@@ -48,13 +51,24 @@ def _first(facts: dict[str, Fact], names: list[str]) -> Fact | None:
     return next((facts[n] for n in names if n in facts), None)
 
 
+def _depreciation_and_amortization(facts: dict[str, Fact]) -> dict[str, Fact]:
+    candidates = [{n: facts[n]} for n in DA if n in facts]
+    if "Depreciation" in facts and "AmortizationOfIntangibleAssets" in facts:
+        candidates.append({n: facts[n] for n in ("Depreciation", "AmortizationOfIntangibleAssets")})
+    return max(candidates, key=lambda c: sum(f.value for f in c.values()), default={})
+
+
 def component(name: str, facts: dict[str, Fact]) -> tuple[float, dict[str, Fact]]:
     """Value of one ratio component and the facts it was built from."""
     if name == "ebitda":
-        op, da = facts.get("OperatingIncomeLoss"), _first(facts, DA)
-        if not op or not da:
+        op = facts.get("OperatingIncomeLoss")
+        da_used = _depreciation_and_amortization(facts)
+        if not op or not da_used:
             raise NotComputable("EBITDA needs operating income and D&A, not both reported")
-        return op.value + da.value, {"OperatingIncomeLoss": op, da.concept: da}
+        return op.value + sum(f.value for f in da_used.values()), {
+            "OperatingIncomeLoss": op,
+            **da_used,
+        }
     if name == "interest_expense":
         fact = _first(facts, INTEREST)
         if not fact:

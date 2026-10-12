@@ -17,3 +17,5 @@ wheels/
 .env
 data/cache/
 data/runs.sqlite*
+data/eval_runs.sqlite*
+evals/results/

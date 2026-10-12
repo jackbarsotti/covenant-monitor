@@ -28,6 +28,7 @@ from covenant_monitor.agent.models import (
     UsageRecord,
 )
 from covenant_monitor.agent.sections import (
+    family_text,
     normalize,
     render_sections,
     split_sections,
@@ -256,7 +257,17 @@ async def extract_covenants(state, deps: Deps, meter: Meter):
         output=Extraction,
         effort="high",
     )
-    return {"extraction": extraction, "extraction_attempts": attempt}
+    return {"extraction": normalize_schedules(extraction), "extraction_attempts": attempt}
+
+
+def normalize_schedules(extraction: Extraction) -> Extraction:
+    """Sort each threshold schedule by date and mark the earliest level as applying from
+    the start (effective_from null). Models often date it with the first test date instead."""
+    for cov in extraction.covenants:
+        cov.thresholds.sort(key=lambda t: t.effective_from or "")
+        if cov.thresholds:
+            cov.thresholds[0].effective_from = None
+    return extraction
 
 
 def review_fields(extraction: Extraction) -> list[dict[str, Any]]:
@@ -290,9 +301,9 @@ def check_citations(extraction: Extraction, sections: list[Section]) -> list[str
         quote = normalize(f["quote"])
         if not quote:
             issues.append(f"{f['id']}: quote is empty")
-        elif f["section"] not in by_id:
+        elif not family_text(sections, f["section"]):
             issues.append(f"{f['id']}: section {f['section']!r} is not one of the given sections")
-        elif quote not in by_id[f["section"]]:
+        elif quote not in family_text(sections, f["section"]):
             elsewhere = [sid for sid, text in by_id.items() if quote in text]
             where = f"; it appears in {elsewhere[0]!r}" if elsewhere else ""
             issues.append(f"{f['id']}: quote not found verbatim in section {f['section']!r}{where}")

@@ -15,6 +15,8 @@ class Models(BaseModel):
     extract_covenants: str = "claude-sonnet-5-5"
     review: str = "claude-opus-5-5"
     draft_memo: str = "claude-sonnet-5-5"
+    answer_questions: str = "claude-sonnet-5-5"
+    judge: str = "claude-opus-5-5"
 
 
 def _default_budgets() -> dict[str, Budget]:
@@ -23,6 +25,9 @@ def _default_budgets() -> dict[str, Budget]:
         "extract_covenants": Budget(max_calls=3, max_tokens=600_000),
         "review": Budget(max_calls=3, max_tokens=150_000),
         "draft_memo": Budget(max_calls=2, max_tokens=80_000),
+        # Q&A reads the whole agreement (cached after the first question).
+        "answer_questions": Budget(max_calls=10, max_tokens=1_500_000),
+        "judge": Budget(max_calls=20, max_tokens=300_000),
     }
 
 

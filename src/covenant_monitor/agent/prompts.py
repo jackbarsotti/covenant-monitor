@@ -30,12 +30,19 @@ Fields:
   min_fixed_charge_coverage, min_net_worth, or other
 - thresholds: one entry per level. The level that applies from closing has effective_from
   null. A step-down or step-up has effective_from set to the first date it applies (ISO
-  YYYY-MM-DD). Write 3.50 to 1.00 as 3.5.
+  YYYY-MM-DD, the first fiscal quarter end it is tested). Write 3.50 to 1.00 as 3.5.
+  If the agreement deems a temporary step-up to be in effect for a named past event (for
+  example an acquisition already completed), convert it to dated levels, ending with the
+  return to the base level. Leave out step-ups the borrower may elect in the future.
 - test_frequency: quarterly, semi_annual, annual, or springing
 - numerator and denominator: total_debt, net_debt, secured_debt, ebitda, interest_expense,
   or other, as the covenant's defined ratio states them
 
-Also list each add-back the EBITDA definition allows, with its cap as written (or null).
+Also list every add-back that raises EBITDA, one entry per clause, with its cap as written
+(or null): each item the EBITDA definition adds back, and each charge or loss excluded from
+the definitions EBITDA builds on (for example Consolidated Net Income). Name exclusions for
+their charge or loss side. Leave out items that add income rather than remove a charge. Put
+only an amount limit in cap; conditions belong in the name.
 
 Extract only what the text states. If the agreement has no financial maintenance covenant,
 return empty lists rather than guessing."""
@@ -61,3 +68,28 @@ against its threshold and the headroom, anything that could not be computed and 
 the analyst's approval note if there is one. Say plainly that EBITDA was computed from
 reported operating income plus depreciation and amortization, without the agreement's
 add-backs, so the covenant-defined ratio may differ. Keep a neutral, factual tone."""
+
+ANSWER = """\
+You answer an analyst's question about a corporate credit agreement, using only the
+agreement text provided, which is wrapped in <section id="..."> tags.
+
+If the agreement states the answer, set found to true, give a short answer, the id of the
+section it comes from (copied exactly from the tag), and a contiguous quote copied verbatim
+from that section (under 300 characters) that supports it.
+
+If the agreement does not state the answer, set found to false and leave answer, section,
+and quote null. Questions about the company's actual results, other debt instruments, or
+facts outside this agreement are usually not answered by it. Do not guess or infer from
+general knowledge."""
+
+JUDGE = """\
+You check a covenant monitoring memo for faithfulness to its facts table.
+
+The memo is faithful only if every claim in it is supported by the facts table: numbers,
+ratios, thresholds, headroom, dates, sections, filings, and any statement about compliance,
+breach, risk, or what was or was not computed. Neutral connective prose is fine. A claim
+that goes beyond the facts (for example calling a covenant breached when headroom is
+positive, saying add-backs were applied, or naming a covenant that is not in the table) is
+unfaithful.
+
+Return passed true only if there is no unsupported claim. List each unsupported claim."""
