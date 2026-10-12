@@ -53,6 +53,40 @@ instead of being silently dropped. The loader checks shape only: counts, formats
 order, and that every expected result names a covenant. It never recomputes the expected
 ratios, because those are the labels the ratio code gets scored against.
 
+## 007: Code checks before the reviewer model
+
+Every extracted field cites a section and quotes it. Before the Opus reviewer sees
+anything, code confirms each quote appears verbatim in the cited section (ignoring curly
+quotes and whitespace), that dates parse, and that thresholds are positive. A failure there
+goes straight back to extraction with the exact problems, and the reviewer is never called.
+The reviewer only judges what code can't: whether a real quote supports the claimed value.
+After two retries the run goes to a human rather than guessing.
+
+## 008: The memo model never writes a number
+
+The memo model writes prose with placeholders like `{c0.ratio}`, and code fills them from a
+facts table built from XBRL filings and the ratio results. Any digit typed outside a
+placeholder, or an unknown key, fails the draft (one retry, then the run stops). Every
+number in the memo is listed under Sources with its accession.
+
+## 009: Ratios from same-year XBRL, without add-backs
+
+Ratio inputs come from the latest 10-K's XBRL. Companies change tags over time, and a tag
+they stopped using still returns its last value, so only facts for the latest fiscal year
+end are used; a missing input makes the covenant "not computable" and sends it to a human.
+EBITDA is operating income plus D&A as reported. The agreement's add-backs are extracted but
+not applied, since filings don't break them out, so the memo says the ratio approximates the
+covenant definition.
+
+## 010: Agreement choice and refusal fallbacks
+
+Without an explicit `agreement_url`, the run takes the newest EX-10 credit agreement from
+EDGAR full-text search, skipping amendments, and the lowest exhibit number when one filing
+has several. Evals pass the golden agreement URL so scoring never depends on that guess.
+Sonnet and Opus calls opt into server-side refusal fallbacks (`fallbacks: "default"`), so a
+false-positive refusal reroutes instead of failing the run; Haiku has no fallback, and any
+refusal that remains stops the run with a reason.
+
 ## 011: AI-drafted, AI-verified golden labels
 
 Hand labeling is the gold standard but was blocking progress. Labels are now drafted by one
