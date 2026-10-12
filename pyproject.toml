@@ -1,0 +1,38 @@
+[project]
+name = "covenant-monitor"
+version = "0.1.0"
+description = "Agent that monitors credit agreement covenants for public companies using SEC EDGAR"
+readme = "README.md"
+authors = [
+    { name = "Jack Barsotti" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=1.13.0",
+    "httpx>=0.28.1",
+    "langgraph>=1.2.14",
+    "mcp>=2.3.0",
+    "pydantic>=2.14.1",
+    "python-dotenv>=1.2.4",
+]
+
+[build-system]
+requires = ["uv_build>=0.11.32,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "respx>=0.23.1",
+    "ruff>=0.17.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
