@@ -52,3 +52,17 @@ validated by a pydantic schema that rejects unknown keys, so a misspelled field 
 instead of being silently dropped. The loader checks shape only: counts, formats, date
 order, and that every expected result names a covenant. It never recomputes the expected
 ratios, because those are the labels the ratio code gets scored against.
+
+## 011: AI-drafted, AI-verified golden labels
+
+Hand labeling is the gold standard but was blocking progress. Labels are now drafted by one
+agent from the source documents and checked field by field by a second agent with fresh
+context that can only report, never edit. Each file records `provenance`, so eval reports
+can show which scores rest on AI-checked labels.
+
+The risk is circularity: the system under test is also Claude, so shared blind spots can
+pass both the labels and the agent. Mitigations: every label quotes the agreement verbatim
+and cites the section; expected ratios are computed in code from cited 10-K figures, not by
+the model; the verifier re-derives each value from the source rather than reading the
+draft's reasoning; and trap questions are checked against the full agreement. Any label a
+person later checks moves to `ai_drafted_human_verified`.

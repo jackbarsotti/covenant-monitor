@@ -1,4 +1,4 @@
-"""Schema checks run on made-up data. Real labels live in data/golden/ and are hand-written."""
+"""Schema checks run on made-up data. Real labels live in data/golden/."""
 
 import copy
 
@@ -9,6 +9,7 @@ from pydantic import ValidationError
 from covenant_monitor.golden import GOLDEN_DIR, GoldenCompany, label_files, load_all, load_file
 
 FAKE = {
+    "provenance": "hand",
     "company": {"ticker": "FAKE", "cik": 1, "name": "Example Corp"},
     "agreement": {
         "accession": "0000000001-20-000001",
@@ -87,6 +88,7 @@ def test_fake_company_is_valid():
         {"covenants__0__thresholds": [{"ratio": -1.0}]},
         {"latest_fiscal_year__expected__0__covenant": "min_interest_coverage"},
         {"unexpected_field": 1},
+        {"provenance": "vibes"},
     ],
 )
 def test_rejects_malformed_labels(changes):
