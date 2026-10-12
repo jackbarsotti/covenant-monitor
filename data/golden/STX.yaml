@@ -1,0 +1,193 @@
+# Seagate: Credit Agreement dated January 30, 2025 ($1.3B senior unsecured revolver maturing
+# January 30, 2030), EX-10.1 to the 8-K filed 2025-02-03. Borrower is Seagate HDD Cayman;
+# Holdings is Seagate Technology Holdings plc. No amendment found in Seagate filings through
+# 2026-09-09 (10-K for fiscal 2026 lists only the original agreement).
+#
+# The single Financial Covenant (Section 7.08) is a net leverage maximum that steps down on
+# a dated schedule. For Test Periods ending on or before the fiscal quarter ending on or about
+# December 31, 2025 it applied only if the revolver was drawn (the "Testing Condition");
+# after that it is tested every quarter.
+#
+# Ratios are plain numbers: 3.5 means 3.50 to 1.00. Money is in USD, no commas.
+
+provenance: ai_drafted_ai_verified
+
+company:
+  ticker: STX
+  cik: 1137789
+  name: Seagate Technology Holdings plc
+
+agreement:
+  accession: 0001137789-25-000023
+  exhibit: EX-10.1
+  url: https://www.sec.gov/Archives/edgar/data/1137789/000113778925000023/seagate-creditagreementedg.htm
+  agreement_date: 2025-01-30
+  amendments: []
+
+covenants:
+  - type: max_leverage
+    description: Maximum Consolidated Total Net Leverage Ratio (the Financial Covenant)
+    thresholds:
+      - ratio: 6.75
+        effective_from: null
+      - ratio: 5.5
+        effective_from: 2025-09-30
+      - ratio: 4.75
+        effective_from: 2026-09-30
+      - ratio: 4.25
+        effective_from: 2027-09-30
+    test_frequency: quarterly
+    section: Section 7.08
+    # Row of the Section 7.08 table in effect for the Test Period ending 2026-07-03.
+    quote: >-
+      Each Test Period ending on or after September 30, 2025, and on or prior to September 30, 2026 5.50 to 1.00
+
+ebitda_addbacks:
+  - name: Provision for taxes based on income, profits or capital (including tax distributions)
+    section: Section 1.01 (Consolidated EBITDA, clause (1)(a))
+    cap: null
+  - name: Consolidated Interest Expense (including hedging net payments and losses, bank and letter of credit fees) and non-cash interest expense
+    section: Section 1.01 (Consolidated EBITDA, clause (1)(b))
+    cap: null
+  - name: Depreciation and amortization charges and expenses
+    section: Section 1.01 (Consolidated EBITDA, clause (1)(c))
+    cap: null
+  - name: Minority interest expense attributable to third parties in non-wholly-owned Subsidiaries
+    section: Section 1.01 (Consolidated EBITDA, clause (1)(d))
+    cap: null
+  - name: Earn-out obligations incurred in connection with any acquisition or other Investment
+    section: Section 1.01 (Consolidated EBITDA, clause (1)(e))
+    cap: null
+  - name: Charges for rollover, acceleration or payout of equity interests and payments to option holders in connection with distributions
+    section: Section 1.01 (Consolidated EBITDA, clause (1)(f))
+    cap: null
+  - name: Non-cash losses, charges and expenses (including write-offs, write-downs and non-cash compensation)
+    section: Section 1.01 (Consolidated EBITDA, clause (1)(g))
+    cap: null
+  - name: Pro Forma Cost Savings (subject to the Shared EBITDA Cap)
+    section: Section 1.01 (Consolidated EBITDA, clause (1)(h))
+    cap: >-
+      shall not exceed an amount equal to the greater of (x) $300,000,000 and (y) 20.0% of the
+      Consolidated EBITDA of Holdings for any Test Period
+  - name: Net foreign currency losses (FASB ASC 830)
+    section: Section 1.01 (Consolidated EBITDA, clause (3))
+    cap: null
+  - name: Losses relating to Swap Contracts
+    section: Section 1.01 (Consolidated EBITDA, clause (4))
+    cap: null
+  # Consolidated EBITDA starts from Consolidated Net Income, so CNI exclusions of losses and
+  # charges also raise EBITDA.
+  - name: Net after-tax extraordinary losses, expenses and charges, and nonrecurring, one-time, unusual or exceptional losses, expenses and charges (excluded from Consolidated Net Income)
+    section: Section 1.01 (Consolidated Net Income, clause (a)(I))
+    cap: null
+  - name: Contract termination costs, costs of cost savings initiatives, cost rationalization and operating improvement programs, facility closure or consolidation costs, startup and pre-opening costs, and costs from unused manufacturing capacity (excluded from Consolidated Net Income)
+    section: Section 1.01 (Consolidated Net Income, clause (a)(II))
+    cap: the aggregate amount excluded from Consolidated Net Income pursuant to this sub-clause (II) shall be subject to the Shared EBITDA Cap
+  - name: Losses, charges and expenses related to the Transactions, and transaction fees and costs for equity issuances, investments, acquisitions, dispositions, recapitalizations, refinancings and debt incurrence or repayment, whether or not completed (excluded from Consolidated Net Income)
+    section: Section 1.01 (Consolidated Net Income, clause (b))
+    cap: null
+  - name: Net after-tax losses from abandoned, closed or discontinued operations and on their disposal (excluded from Consolidated Net Income)
+    section: Section 1.01 (Consolidated Net Income, clause (c))
+    cap: null
+  - name: Net after-tax losses on business and asset dispositions outside the ordinary course, and on early extinguishment of Indebtedness, Swap Contracts or other derivatives (excluded from Consolidated Net Income)
+    section: Section 1.01 (Consolidated Net Income, clause (d))
+    cap: null
+  - name: Non-cash or unrealized currency translation losses (excluded from Consolidated Net Income)
+    section: Section 1.01 (Consolidated Net Income, clause (e))
+    cap: null
+  - name: Charges from the cumulative effect of a change in accounting principles or policies (excluded from Consolidated Net Income)
+    section: Section 1.01 (Consolidated Net Income, clause (g))
+    cap: null
+  - name: Effects of purchase accounting, fair value or recapitalization accounting adjustments for the Transactions or any acquisition, and amortization, write-down or write-off of those amounts (excluded from Consolidated Net Income)
+    section: Section 1.01 (Consolidated Net Income, clause (h))
+    cap: null
+  - name: Non-cash impairment charges, asset write-downs and write-offs, and amortization of intangibles arising from the application of GAAP (excluded from Consolidated Net Income)
+    section: Section 1.01 (Consolidated Net Income, clause (i))
+    cap: null
+  - name: Amortization and write-offs of deferred financing fees, debt issuance costs, letter of credit charges and bridge, commitment or other financing fees (excluded from Consolidated Net Income)
+    section: Section 1.01 (Consolidated Net Income, clause (k))
+    cap: null
+  - name: Discounts, commissions, fees and other charges (including interest expense) associated with any Receivables Facility (excluded from Consolidated Net Income)
+    section: Section 1.01 (Consolidated Net Income, clause (l))
+    cap: null
+  - name: Charges from inventory revaluation and other inventory adjustments (excluded from Consolidated Net Income)
+    section: Section 1.01 (Consolidated Net Income, clause (m))
+    cap: null
+  - name: Fees, costs, charges, expenses or reserves reimbursed, or reimbursable with reasonable evidence of reimbursement, by third parties under indemnification, reimbursement or insurance arrangements (excluded from Consolidated Net Income; deducted later if not reimbursed within 365 days of the end of the Test Period)
+    section: Section 1.01 (Consolidated Net Income, clause (n))
+    cap: null
+  - name: Run-rate cost savings, operating expense reductions and synergies expected within 24 months (Pro Forma Basis)
+    section: Section 1.01 (Pro Forma Basis, clause (x))
+    cap: in the aggregate, in any Test Period, shall not exceed the Shared EBITDA Cap
+
+latest_fiscal_year:
+  period_end: 2026-07-03
+  inputs:
+    operating_income:
+      value: 4094000000
+      source: OperatingIncomeLoss
+      accession: 0001137789-26-000159
+    depreciation_amortization:
+      value: 276000000
+      source: DepreciationDepletionAndAmortization
+      accession: 0001137789-26-000159
+    ebitda:
+      value: 4370000000
+      source: sum of OperatingIncomeLoss + DepreciationDepletionAndAmortization
+      accession: 0001137789-26-000159
+    current_debt:
+      value: 185000000
+      source: LongTermDebtCurrent
+      accession: 0001137789-26-000159
+    long_term_debt:
+      value: 3380000000
+      source: LongTermDebtNoncurrent
+      accession: 0001137789-26-000159
+    total_debt:
+      value: 3565000000
+      source: sum of LongTermDebtNoncurrent + LongTermDebtCurrent
+      accession: 0001137789-26-000159
+    cash:
+      value: 1704000000
+      source: CashAndCashEquivalentsAtCarryingValue
+      accession: 0001137789-26-000159
+    net_debt:
+      value: 1861000000
+      source: sum of LongTermDebtNoncurrent + LongTermDebtCurrent minus CashAndCashEquivalentsAtCarryingValue
+      accession: 0001137789-26-000159
+  expected:
+    # net_debt / ebitda. The Test Period ending July 3, 2026 falls in the 5.50 band.
+    - covenant: max_leverage
+      ratio: 0.43
+      threshold: 5.5
+      headroom: 5.07
+
+questions:
+  - question: What is the maximum Consolidated Total Net Leverage Ratio for Test Periods ending on or after September 30, 2027?
+    trap: false
+    answer: 4.25 to 1.00.
+    section: Section 7.08
+  - question: Was the Financial Covenant tested in quarters when the revolver was undrawn?
+    trap: false
+    answer: >-
+      Not at first. For Test Periods ending on or before the fiscal quarter ending on or about
+      December 31, 2025, the covenant did not apply if outstanding Revolving Credit Loans
+      (including Swingline Loans) and Letters of Credit, excluding cash-collateralized and
+      undrawn Letters of Credit, were 0.0% of the Revolving Credit Commitments (the Testing
+      Condition). Later Test Periods are tested regardless of usage.
+    section: Section 7.08
+  - question: What limits the Pro Forma Cost Savings add-back to Consolidated EBITDA?
+    trap: false
+    answer: >-
+      The Shared EBITDA Cap: together with certain restructuring-type exclusions and run-rate
+      synergies, it may not exceed the greater of $300,000,000 and 20.0% of Consolidated
+      EBITDA for the Test Period.
+    section: Section 1.01 (Consolidated EBITDA)
+  - question: What was Seagate's Consolidated Total Net Leverage Ratio for the Test Period ended July 3, 2026?
+    trap: true
+    answer: null
+    section: null
+  - question: What maximum leverage ratio did Seagate's prior credit agreement dated February 20, 2019 require?
+    trap: true
+    answer: null
+    section: null

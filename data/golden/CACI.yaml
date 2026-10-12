@@ -1,0 +1,174 @@
+# CACI: Second Amended and Restated Credit Agreement dated November 25, 2025 ($2.0B revolver
+# and $1.25B term loan, both maturing November 25, 2030), EX-10.1 to the 8-K filed 2025-12-01.
+# No amendment found through the fiscal 2026 10-K (filed 2026-08-06). The March 9, 2026
+# Amendment No. 1 amends CACI's separate JPM Term Loan B Credit Agreement, not this one.
+#
+# The leverage maximum can rise to 5.00 for a Leverage Increase Period after a Permitted
+# Acquisition over $200,000,000, at CACI's election. That is conditional, not a calendar step,
+# so only the 4.50 base level is listed.
+#
+# Ratios are plain numbers: 3.5 means 3.50 to 1.00. Money is in USD, no commas.
+
+provenance: ai_drafted_ai_verified
+
+company:
+  ticker: CACI
+  cik: 16058
+  name: CACI INTERNATIONAL INC /DE/
+
+agreement:
+  accession: 0001628280-25-054481
+  exhibit: EX-10.1
+  url: https://www.sec.gov/Archives/edgar/data/16058/000162828025054481/secondar1.htm
+  agreement_date: 2025-11-25
+  amendments: []
+
+covenants:
+  - type: max_leverage
+    description: Consolidated Total Net Leverage Ratio
+    thresholds:
+      - ratio: 4.5
+        effective_from: null
+    test_frequency: quarterly
+    section: Section 8.11(a)
+    quote: >-
+      (a)Consolidated Total Net Leverage Ratio. Permit the Consolidated Total Net Leverage Ratio as of the end of any fiscal quarter of the Borrower, commencing with the fiscal quarter ending December 31, 2025, to be greater than 4.50:1.00
+  - type: min_interest_coverage
+    description: Consolidated Interest Coverage Ratio
+    thresholds:
+      - ratio: 3.0
+        effective_from: null
+    test_frequency: quarterly
+    section: Section 8.11(b)
+    quote: >-
+      (b)Consolidated Interest Coverage Ratio. Permit the Consolidated Interest Coverage Ratio as of the end of any fiscal quarter of the Borrower, commencing with the fiscal quarter ending December 31, 2025, to be less than 3.00:1.0.
+
+ebitda_addbacks:
+  - name: Consolidated Interest Charges
+    section: Section 1.01 (Consolidated EBITDA, clause (b)(i))
+    cap: null
+  - name: Taxes based on income, profits or capital, including franchise and foreign withholding taxes and related penalties and interest
+    section: Section 1.01 (Consolidated EBITDA, clause (b)(ii))
+    cap: null
+  - name: Depreciation and amortization expense (including amortization of intangible assets and deferred financing fees or costs)
+    section: Section 1.01 (Consolidated EBITDA, clause (b)(iii))
+    cap: null
+  - name: Extraordinary or non-recurring charges, expenses or losses
+    section: Section 1.01 (Consolidated EBITDA, clause (b)(iv))
+    cap: null
+  - name: Other non-cash charges, expenses or losses
+    section: Section 1.01 (Consolidated EBITDA, clause (b)(v))
+    cap: null
+  - name: Non-cash stock option and other equity-based compensation expenses
+    section: Section 1.01 (Consolidated EBITDA, clause (b)(vi))
+    cap: null
+  - name: Fees and expenses relating to this Agreement
+    section: Section 1.01 (Consolidated EBITDA, clause (b)(vii))
+    cap: null
+  - name: Net loss from early extinguishment of Indebtedness or from hedging obligations or other derivative instruments
+    section: Section 1.01 (Consolidated EBITDA, clause (b)(viii))
+    cap: null
+  - name: Net loss from disposed, abandoned or discontinued operations
+    section: Section 1.01 (Consolidated EBITDA, clause (b)(ix))
+    cap: null
+  - name: Non-cash portion of straight-line rent expense
+    section: Section 1.01 (Consolidated EBITDA, clause (b)(x))
+    cap: null
+  - name: Transaction fees and expenses (acquisitions, investments, dispositions, debt or equity issuance, refinancings, amendments) and non-recurring merger costs
+    section: Section 1.01 (Consolidated EBITDA, clause (b)(xi))
+    cap: null
+  - name: Pro forma cost savings and synergies expected within 24 months of an Investment or asset disposition
+    section: Section 1.01 (Consolidated EBITDA, clause (c))
+    cap: >-
+      shall not exceed twenty-five percent (25%) of Consolidated EBITDA for such period
+      (calculated after giving effect to this clause (c))
+  - name: Non-cash effects of purchase accounting or similar adjustments for Permitted Acquisitions or other permitted Investments (disregarded in calculating Consolidated EBITDA)
+    section: Section 1.01 (Consolidated EBITDA, final paragraph, clause (i))
+    cap: null
+  - name: Extraordinary losses (excluded from Consolidated Net Income)
+    section: Section 1.01 (Consolidated Net Income)
+    cap: null
+
+latest_fiscal_year:
+  period_end: 2026-06-30
+  inputs:
+    operating_income:
+      value: 919815000
+      source: OperatingIncomeLoss
+      accession: 0001628280-26-054195
+    depreciation_amortization:
+      value: 245899000
+      source: DepreciationAndAmortization
+      accession: 0001628280-26-054195
+    ebitda:
+      value: 1165714000
+      source: sum of OperatingIncomeLoss + DepreciationAndAmortization
+      accession: 0001628280-26-054195
+    interest_expense:
+      value: 215454000
+      source: InterestExpenseNonoperating
+      accession: 0001628280-26-054195
+    current_debt:
+      value: 46750000
+      source: LongTermDebtCurrent
+      accession: 0001628280-26-054195
+    long_term_debt:
+      value: 4854759000
+      source: LongTermDebtNoncurrent
+      accession: 0001628280-26-054195
+    total_debt:
+      value: 4901509000
+      source: sum of LongTermDebtNoncurrent + LongTermDebtCurrent
+      accession: 0001628280-26-054195
+    cash:
+      value: 191756000
+      source: CashAndCashEquivalentsAtCarryingValue
+      accession: 0001628280-26-054195
+    net_debt:
+      value: 4709753000
+      source: sum of LongTermDebtNoncurrent + LongTermDebtCurrent minus CashAndCashEquivalentsAtCarryingValue
+      accession: 0001628280-26-054195
+  expected:
+    # net_debt / ebitda against the 4.50 contractual base. ARKA Group (purchase consideration
+    # $2,642.7 million net of cash acquired, per the FY2026 10-K) closed 2026-03-09 and exceeds
+    # the $200,000,000 Leverage Increase Period trigger. If CACI elected a Leverage Increase
+    # Period (not disclosed), the maximum at 2026-06-30 was 5.00 and headroom 0.96. As-reported
+    # EBITDA excludes ARKA's pre-close earnings, which the covenant adds on a Pro Forma Basis.
+    - covenant: max_leverage
+      ratio: 4.04
+      threshold: 4.5
+      headroom: 0.46
+    # ebitda / interest_expense
+    - covenant: min_interest_coverage
+      ratio: 5.41
+      threshold: 3.0
+      headroom: 2.41
+
+questions:
+  - question: How high can the leverage maximum go after a large acquisition, and how often can CACI use that relief?
+    trap: false
+    answer: >-
+      If a Permitted Acquisition's consideration exceeds $200,000,000 and CACI gives notice
+      before the end of that fiscal quarter, the maximum rises to 5.00 to 1.0 for that quarter
+      and the following three (a Leverage Increase Period). CACI may elect no more than two
+      Leverage Increase Periods during the term.
+    section: Section 8.11(a)
+  - question: How much cash can CACI net against debt in the Consolidated Total Net Leverage Ratio?
+    trap: false
+    answer: Up to $500 million of Unrestricted Cash.
+    section: Section 1.01 (Consolidated Total Net Leverage Ratio)
+  - question: Is there a limit on pro forma cost savings and synergies added to Consolidated EBITDA?
+    trap: false
+    answer: >-
+      Yes. They must be expected within 24 months of the Investment or asset disposition, and
+      the add-back may not exceed 25% of Consolidated EBITDA for the period, calculated after
+      giving effect to the add-back.
+    section: Section 1.01 (Consolidated EBITDA, clause (c))
+  - question: What was CACI's Consolidated Total Net Leverage Ratio as of June 30, 2026?
+    trap: true
+    answer: null
+    section: null
+  - question: What interest rate do CACI's senior unsecured notes due 2033 bear?
+    trap: true
+    answer: null
+    section: null

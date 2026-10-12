@@ -100,3 +100,19 @@ and cites the section; expected ratios are computed in code from cited 10-K figu
 the model; the verifier re-derives each value from the source rather than reading the
 draft's reasoning; and trap questions are checked against the full agreement. Any label a
 person later checks moves to `ai_drafted_human_verified`.
+
+## 012: Labeling policies
+
+Rules settled while verifying the first three companies. Future labels follow them.
+- Thresholds: dated step-downs are listed with the first date they apply. Acquisition
+  step-ups are listed only when the agreement deems them in effect on fixed dates (BSX);
+  elective ones stay out of the schedule and go in a comment (CACI's Leverage Increase
+  Period).
+- Expected threshold is the level in effect on the fiscal year end.
+- Each covenant quote states the threshold `expected` uses, verbatim. `section` is where the
+  covenant is imposed; a comment names the definition section when the quote comes from one.
+- Add-backs include the EBITDA definition's items and the Consolidated Net Income
+  exclusions that raise EBITDA, named for their charge side. Income inclusions are left out.
+  A cap holds an amount limit only; conditions go in the name.
+- Ratio inputs are as-reported 10-K XBRL values for the same fiscal year end, debt at
+  carrying amount, no agreement add-backs.

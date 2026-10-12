@@ -1,0 +1,146 @@
+# Boston Scientific: $3.0B five-year revolving credit agreement (2026 Revolving Credit
+# Agreement), EX-10.1 to the 8-K filed 2026-02-26. Chosen over EX-10.2, the $2.0B 364-day
+# revolver tied to a pending acquisition, which has the same covenant but a short life.
+# No amendment found in BSX filings through 2026-10-07.
+#
+# The Maximum Leverage Ratio is 3.75 with step-ups after a Qualified Acquisition (4.75 for the
+# four fiscal quarters including the closing quarter, then 4.50, 4.25, 4.00). The definition
+# deems the step-ups for the November 15, 2024 acquisition to be in effect, so they are fixed
+# to dates: 4.75 through the quarter ended 2025-09-30, 4.50 at 2025-12-31, 4.25 at
+# 2026-03-31, 4.00 at 2026-06-30, and 3.75 from the quarter ending 2026-09-30. BSX's FY2025
+# 10-K states: "As of December 31, 2025, the maximum permitted leverage ratio is 4.50 times."
+# A later Qualified Acquisition would start a new step-up cycle; none is reflected here.
+#
+# Ratios are plain numbers: 3.5 means 3.50 to 1.00. Money is in USD, no commas.
+
+provenance: ai_drafted_ai_verified
+
+company:
+  ticker: BSX
+  cik: 885725
+  name: BOSTON SCIENTIFIC CORP
+
+agreement:
+  accession: 0000885725-26-000017
+  exhibit: EX-10.1
+  url: https://www.sec.gov/Archives/edgar/data/885725/000088572526000017/exhibit101-creditagreement.htm
+  agreement_date: 2026-02-26
+  amendments: []
+
+covenants:
+  - type: max_leverage
+    description: Consolidated Leverage Ratio
+    thresholds:
+      - ratio: 4.75
+        effective_from: null
+      - ratio: 4.5
+        effective_from: 2025-12-31
+      - ratio: 4.25
+        effective_from: 2026-03-31
+      - ratio: 4.0
+        effective_from: 2026-06-30
+      - ratio: 3.75
+        effective_from: 2026-09-30
+    test_frequency: quarterly
+    section: Section 9.1
+    # Quote is from the Section 1.1 definition of "Maximum Leverage Ratio" (the level Section 9.1
+    # incorporates), clause (b): the 4.50 level in effect at 2025-12-31.
+    quote: >-
+      (b) for the fiscal quarter ended immediately after such four fiscal quarters referred to in clause (a), the Maximum Leverage Ratio shall be 4.50 to 1.00
+
+ebitda_addbacks:
+  - name: Income tax expense, including expenses from income tax disputes with a Governmental Authority
+    section: Section 1.1 (Consolidated EBITDA, clause (a))
+    cap: null
+  - name: Consolidated Interest Expense, amortization or writeoff of debt discount and debt issuance costs, and other fees and charges associated with Indebtedness
+    section: Section 1.1 (Consolidated EBITDA, clause (b))
+    cap: null
+  - name: Depreciation expense
+    section: Section 1.1 (Consolidated EBITDA, clause (c))
+    cap: null
+  - name: Amortization or write-down of intangibles (including goodwill) and organization costs
+    section: Section 1.1 (Consolidated EBITDA, clause (d))
+    cap: null
+  - name: Extraordinary, unusual or nonrecurring expenses or losses, to the extent non-cash (including acquisition-related special charges, purchased R&D, inventory step-up, fair value adjustments and unrealized investment impairments)
+    section: Section 1.1 (Consolidated EBITDA, clause (e))
+    cap: null
+  - name: Non-cash stock compensation expense
+    section: Section 1.1 (Consolidated EBITDA, clause (f))
+    cap: null
+  - name: Cash litigation costs, net of cash litigation receipts (Cash Litigation Payments)
+    section: Section 1.1 (Consolidated EBITDA, clause (g))
+    cap: the aggregate amount of Cash Litigation Payments under this clause (g) since December 31, 2025 shall not exceed $1,160,000,000
+  - name: Income or expense from business combinations under FASB Statement No. 141(R) that would have been a cost of the acquisition under FASB Statement No. 141, including contingent consideration
+    section: Section 1.1 (Consolidated EBITDA, clause (i))
+    cap: null
+  - name: Non-Cash Charges, including those attributable to litigation, intangible asset impairment and intellectual property research and development charges
+    section: Section 1.1 (Consolidated EBITDA, clause (j))
+    cap: null
+  - name: Cash receipts received in connection with litigation related Non-Cash Charges (added to Consolidated Net Income)
+    section: Section 1.1 (Consolidated Net Income)
+    cap: null
+
+latest_fiscal_year:
+  period_end: 2025-12-31
+  inputs:
+    operating_income:
+      value: 3613000000
+      source: OperatingIncomeLoss
+      accession: 0000885725-26-000010
+    depreciation_amortization:
+      value: 1368000000
+      source: DepreciationDepletionAndAmortization
+      accession: 0000885725-26-000010
+    ebitda:
+      value: 4981000000
+      source: sum of OperatingIncomeLoss + DepreciationDepletionAndAmortization
+      accession: 0000885725-26-000010
+    current_debt:
+      value: 299000000
+      source: DebtCurrent
+      accession: 0000885725-26-000010
+    long_term_debt:
+      value: 11137000000
+      source: LongTermDebtAndCapitalLeaseObligations
+      accession: 0000885725-26-000010
+    total_debt:
+      value: 11436000000
+      source: sum of LongTermDebtAndCapitalLeaseObligations + DebtCurrent
+      accession: 0000885725-26-000010
+  expected:
+    # total_debt / ebitda against the 4.50 step-up level in effect at 2025-12-31.
+    - covenant: max_leverage
+      ratio: 2.3
+      threshold: 4.5
+      headroom: 2.2
+
+questions:
+  - question: What is the maximum leverage ratio after a Qualified Acquisition, and how does it step back down?
+    trap: false
+    answer: >-
+      4.75 to 1.00 for the four fiscal quarters ending after the acquisition (including the
+      quarter in which it closes), then 4.50, 4.25 and 4.00 to 1.00 for the next three
+      quarters, after which it returns to 3.75 to 1.00. The agreement deems these step-ups in
+      effect for the Qualified Acquisition consummated on November 15, 2024.
+    section: Section 1.1 (Maximum Leverage Ratio)
+  - question: How much in cash litigation payments can be added back to Consolidated EBITDA?
+    trap: false
+    answer: >-
+      Cash Litigation Payments (net of cash litigation receipts) can be added back up to
+      $1,160,000,000 in aggregate since December 31, 2025.
+    section: Section 1.1 (Consolidated EBITDA, clause (g))
+  - question: Does debt raised to prefund an acquisition count in Consolidated Total Debt before the deal closes?
+    trap: false
+    answer: >-
+      No. Indebtedness incurred to prefund a Qualified Acquisition is excluded from
+      Consolidated Total Debt for Section 9.1 until the acquisition closes or is abandoned,
+      terminated or expires.
+    section: Section 1.1 (Consolidated Total Debt)
+  - question: What was Boston Scientific's Consolidated Leverage Ratio as of December 31, 2025?
+    trap: true
+    answer: null
+    section: null
+  - question: What maximum leverage ratio applies under the $6.0 billion Term Loan Credit Agreement Boston Scientific signed the same day?
+    trap: true
+    answer: null
+    section: null
