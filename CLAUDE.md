@@ -15,8 +15,16 @@ a human for approval first.
 - Every SEC request goes through the shared client: User-Agent from `.env`, under 10 requests per second.
 - Never read, print, or commit `.env`.
 - Tests must not hit the network. Mock HTTP with respx.
-- Explain a change before making it. Keep diffs small and commit after each passing check.
+- Explain a change before making it. Keep diffs small.
 - Record design choices in DECISIONS.md.
+- Golden labels in `data/golden/` are written by hand. Never create or change label values.
+
+## Workflow
+- Build in the order in `docs/ROADMAP.md`, one step at a time.
+- When a step's "Done when" checks pass, stop. Summarize the diff for review before committing.
+- Commit messages: short imperative subject line, blank line, bullets on what changed and why.
+  No "WIP", "scaffold", or "step N" wording.
+- Push only after CI-equivalent checks pass locally: ruff check, ruff format --check, pytest.
 
 ## Commands
 - `uv run pytest -q`
