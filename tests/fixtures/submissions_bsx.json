@@ -1,0 +1,171 @@
+{
+ "cik": "0000885725",
+ "entityType": "operating",
+ "sic": "3841",
+ "sicDescription": "Surgical & Medical Instruments & Apparatus",
+ "ownerOrg": "08 Industrial Applications and Services",
+ "insiderTransactionForOwnerExists": 1,
+ "insiderTransactionForIssuerExists": 1,
+ "name": "BOSTON SCIENTIFIC CORP",
+ "tickers": [
+  "BSX"
+ ],
+ "exchanges": [
+  "NYSE"
+ ],
+ "ein": "042695240",
+ "lei": null,
+ "website": "",
+ "investorWebsite": "",
+ "category": "Large accelerated filer",
+ "fiscalYearEnd": "1231",
+ "stateOfIncorporation": "DE",
+ "stateOfIncorporationDescription": "DE",
+ "phone": "508-683-4000",
+ "filings": {
+  "recent": {
+   "accessionNumber": [
+    "0000885725-26-000064",
+    "0000885725-26-000061",
+    "0000885725-26-000053",
+    "0000885725-26-000033",
+    "0000885725-26-000010",
+    "0000885725-25-000011"
+   ],
+   "filingDate": [
+    "2026-10-07",
+    "2026-09-23",
+    "2026-08-03",
+    "2026-05-01",
+    "2026-02-17",
+    "2025-02-18"
+   ],
+   "reportDate": [
+    "2026-10-01",
+    "2026-09-21",
+    "2026-06-30",
+    "2026-03-31",
+    "2025-12-31",
+    "2024-12-31"
+   ],
+   "acceptanceDateTime": [
+    "2026-10-07T14:11:57.000Z",
+    "2026-09-23T14:01:27.000Z",
+    "2026-08-03T14:32:05.000Z",
+    "2026-05-01T14:25:23.000Z",
+    "2026-02-18T02:08:52.000Z",
+    "2025-02-19T02:13:39.000Z"
+   ],
+   "act": [
+    "34",
+    "34",
+    "34",
+    "34",
+    "34",
+    "34"
+   ],
+   "form": [
+    "8-K",
+    "8-K",
+    "10-Q",
+    "10-Q",
+    "10-K",
+    "10-K"
+   ],
+   "fileNumber": [
+    "001-11083",
+    "001-11083",
+    "001-11083",
+    "001-11083",
+    "001-11083",
+    "001-11083"
+   ],
+   "filmNumber": [
+    "261445413",
+    "261398130",
+    "261230385",
+    "26928769",
+    "26641103",
+    "25635023"
+   ],
+   "items": [
+    "5.02,8.01,9.01",
+    "5.02",
+    "",
+    "",
+    "",
+    ""
+   ],
+   "core_type": [
+    "XBRL",
+    "XBRL",
+    "XBRL",
+    "XBRL",
+    "XBRL",
+    "XBRL"
+   ],
+   "size": [
+    292739,
+    180358,
+    11682613,
+    9185290,
+    18115397,
+    18401229
+   ],
+   "isXBRL": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "isInlineXBRL": [
+    1,
+    1,
+    1,
+    1,
+    1,
+    1
+   ],
+   "isXBRLNumeric": [
+    0,
+    0,
+    1,
+    1,
+    null,
+    null
+   ],
+   "primaryDocument": [
+    "bsx-20261001.htm",
+    "bsx-20260921.htm",
+    "bsx-20260630.htm",
+    "bsx-20260331.htm",
+    "bsx-20251231.htm",
+    "bsx-20241231.htm"
+   ],
+   "primaryDocDescription": [
+    "8-K",
+    "8-K",
+    "10-Q",
+    "10-Q",
+    "10-K",
+    "10-K"
+   ]
+  },
+  "files": [
+   {
+    "name": "CIK0000885725-submissions-001.json",
+    "filingCount": 2005,
+    "filingFrom": "2010-06-23",
+    "filingTo": "2020-09-12"
+   },
+   {
+    "name": "CIK0000885725-submissions-002.json",
+    "filingCount": 1797,
+    "filingFrom": "1995-02-09",
+    "filingTo": "2010-06-21"
+   }
+  ]
+ }
+}

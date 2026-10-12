@@ -1,14 +1,19 @@
+from datetime import date
+
 import httpx
 import pytest
 import respx
+from helpers import fixture_json
 
 from covenant_monitor.edgar import (
-    find_cik,
-    get_json,
+    check_archive_url,
+    find_company,
+    html_to_text,
     latest_annual_value,
+    list_filings,
     pad_cik,
-    user_agent,
 )
+from covenant_monitor.sec_client import SECError
 
 
 def _facts(rows):
@@ -24,11 +29,12 @@ def test_pad_cik():
     assert pad_cik("0000320193") == "0000320193"
 
 
-def test_find_cik_is_case_insensitive():
-    tickers = {"0": {"cik_str": 885725, "ticker": "BSX", "title": "Boston Scientific"}}
-    assert find_cik(tickers, "bsx") == 885725
-    with pytest.raises(KeyError):
-        find_cik(tickers, "NOPE")
+def test_find_company_is_case_insensitive():
+    tickers = fixture_json("company_tickers_exchange.json")
+    assert find_company(tickers, "bsx")["cik"] == 885725
+    assert find_company(tickers, "BRK-B")["exchange"] == "NYSE"
+    with pytest.raises(SECError):
+        find_company(tickers, "NOPE")
 
 
 def test_picks_latest_full_year_and_skips_quarters_and_10q():
@@ -61,20 +67,56 @@ def test_missing_concept_returns_none():
     assert latest_annual_value({"facts": {"us-gaap": {}}}, "OperatingIncomeLoss") is None
 
 
-def test_user_agent_requires_name_and_email(monkeypatch):
-    monkeypatch.setattr("covenant_monitor.edgar.load_dotenv", lambda: None)
-    monkeypatch.setenv("SEC_USER_AGENT", "no-email")
-    with pytest.raises(RuntimeError):
-        user_agent()
-    monkeypatch.setenv("SEC_USER_AGENT", "Jane Doe jane@example.com")
-    assert user_agent() == "Jane Doe jane@example.com"
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://evil.example.com/Archives/edgar/data/1/2/x.htm",
+        "http://www.sec.gov/Archives/edgar/data/1/2/x.htm",
+        "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany",
+        "https://www.sec.gov/Archives/edgar/data/../../files/x.json",
+        "https://www.sec.gov.evil.com/Archives/edgar/data/1/2/x.htm",
+        "https://user@www.sec.gov/Archives/edgar/data/1/2/x.htm",
+        "https://www.sec.gov:8080/Archives/edgar/data/1/2/x.htm",
+        "https://www.sec.gov/Archives/edgar/data/1/2/x.htm?redirect=elsewhere",
+        "file:///etc/passwd",
+    ],
+)
+def test_rejects_non_archive_urls(url):
+    with pytest.raises(SECError):
+        check_archive_url(url)
+
+
+def test_accepts_archive_urls():
+    url = "https://www.sec.gov/Archives/edgar/data/885725/000094787120000527/ss174648_ex1002.htm"
+    assert check_archive_url(url) == url
+
+
+def test_html_to_text_strips_markup_and_keeps_paragraphs():
+    html = (
+        "<html><head><title>x</title><style>p{}</style></head><body>"
+        "<p>Section 7.1 <b>Leverage</b>&nbsp;Ratio.</p><script>evil()</script>"
+        "<table><tr><td>3.50</td><td>to 1.00</td></tr></table></body></html>"
+    )
+    assert html_to_text(html) == "Section 7.1 Leverage Ratio.\n\n3.50 to 1.00"
 
 
 @respx.mock
-def test_get_json_sends_user_agent():
-    route = respx.get("https://data.sec.gov/test.json").mock(
-        return_value=httpx.Response(200, json={"ok": True})
+@pytest.mark.anyio
+async def test_list_filings_reads_older_pages_only_when_since_reaches_back(client):
+    respx.get("https://data.sec.gov/submissions/CIK0000885725.json").mock(
+        return_value=httpx.Response(200, json=fixture_json("submissions_bsx.json"))
     )
-    with httpx.Client(headers={"User-Agent": "Jane Doe jane@example.com"}) as client:
-        assert get_json(client, "https://data.sec.gov/test.json") == {"ok": True}
-    assert route.calls.last.request.headers["User-Agent"] == "Jane Doe jane@example.com"
+    page = respx.get("https://data.sec.gov/submissions/CIK0000885725-submissions-001.json").mock(
+        return_value=httpx.Response(200, json=fixture_json("submissions_bsx_page001.json"))
+    )
+
+    recent = await list_filings(client, 885725, ["10-K"], since=date(2025, 1, 1))
+    assert page.call_count == 0
+    assert recent and all(f["form"] == "10-K" and f["filed"] >= "2025-01-01" for f in recent)
+
+    everything = await list_filings(client, 885725, ["10-k", "8-K"], since=date(2011, 1, 1))
+    assert page.call_count == 1
+    assert len(everything) > len(recent)
+    assert [f["filed"] for f in everything] == sorted(
+        (f["filed"] for f in everything), reverse=True
+    )

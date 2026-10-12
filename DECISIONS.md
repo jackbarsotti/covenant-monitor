@@ -26,3 +26,20 @@ expose my Deal Doc retrieval as a tool, which no public server has.
 One tool handles the Python version, dependencies, and a lockfile, and it's fast in CI.
 `uv sync --locked` in CI fails if the lockfile drifts from pyproject.toml, so the build
 that passes on GitHub is the build I ran locally.
+
+## 004: Sliding-window rate limiter instead of a token bucket
+
+SEC allows 10 requests per second and I cap at 9. A token bucket that allows any burst can
+let more than 9 through in a one-second window: drain a full bucket, then the refill adds
+more before the second is up. A bucket of size one avoids that, but then its float spacing
+decides whether the tenth call lands just inside the window. I keep the times of the last 9
+requests instead, and a new one waits until the oldest is a full second old. That holds the
+cap by construction and still allows a burst of 9. The clock and sleep are injected, so the
+concurrency test runs on a fake clock and never sleeps.
+
+## 005: MCPServer from the mcp 2.x SDK
+
+The roadmap says FastMCP, but mcp 2.x renamed FastMCP to `MCPServer` and changed some
+APIs. I'm on 2.3, so the server uses `MCPServer` instead of pinning `mcp<2`. Anticipated
+failures raise `ToolError` with a short message. Anything else reaches the model only as
+"Error executing tool X", and the traceback stays in the server log.
