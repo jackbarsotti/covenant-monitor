@@ -1,0 +1,19 @@
+{
+  "score": 1.0,
+  "passed": 47,
+  "total": 47,
+  "tolerance": 0.025,
+  "by_category": {
+    "addbacks": "3/3",
+    "found": "4/4",
+    "frequency": "4/4",
+    "memo_faithful": "3/3",
+    "question": "15/15",
+    "quotes_verbatim": "3/3",
+    "ratio": "4/4",
+    "run_completed": "3/3",
+    "schedule": "4/4",
+    "threshold_in_effect": "4/4"
+  },
+  "from": "run3-rescored.json"
+}

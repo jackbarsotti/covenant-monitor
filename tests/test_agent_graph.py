@@ -65,6 +65,7 @@ async def test_happy_path_drafts_a_cited_memo(tools, edgar, tmp_path):
     assert "3.00x against a maximum of 3.75x (7.1)" in memo
     assert "headroom of +0.75x" in memo
     assert "## Sources" in memo and "`c0.ratio`: 3.00x" in memo
+    assert "add-backs are not applied" in llm.calls["draft_memo"][0]["prompt"]
     assert set(out["usage"]) == {"map_sections", "extract_covenants", "review", "draft_memo"}
     # models come from config, and the agreement text is passed as the cached document
     assert llm.calls["review"][0]["model"] == "claude-opus-5-5"
@@ -72,7 +73,7 @@ async def test_happy_path_drafts_a_cited_memo(tools, edgar, tmp_path):
     assert "<section id='7.2'>" not in llm.calls["extract_covenants"][0]["document"]
 
 
-async def test_low_headroom_pauses_then_resumes_from_checkpoint(tools, edgar, tmp_path):
+async def test_low_headroom_pauses_then_resumes_from_checkpoint(tools, edgar, tmp_path, caplog):
     tight(edgar)
     llm = FakeLLM()
     paused = await run(tools, tmp_path, llm, START)
@@ -87,6 +88,7 @@ async def test_low_headroom_pauses_then_resumes_from_checkpoint(tools, edgar, tm
     assert resumed["status"] == "done"
     assert "checked with desk" in llm.calls["draft_memo"][0]["prompt"]
     assert len(llm.calls["extract_covenants"]) == 1  # nothing before the pause re-ran
+    assert "Deserializing unregistered" not in caplog.text  # state types are registered
 
 
 async def test_reject_ends_without_a_memo(tools, edgar, tmp_path):

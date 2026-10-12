@@ -1,8 +1,10 @@
 """Split a credit agreement into numbered sections and batch them for the map step.
 
 Headings look like "7.1. Financial Condition Covenants." or "Section 7.11 Leverage Ratio".
-The table of contents repeats every heading, so for each section number we keep the
-longest body. The definitions section is huge and holds the terms that matter most
+In EDGAR HTML the number and title are often separate elements, so after tags are
+stripped they run together: "9.1.Financial Covenant." or "Section 7.08Financial Covenant.
+As of...". The table of contents repeats every heading, so for each section number we keep
+the longest body. The definitions section is huge and holds the terms that matter most
 (Consolidated EBITDA, Leverage Ratio), so long sections are split at each defined term.
 """
 
@@ -11,10 +13,11 @@ import re
 from covenant_monitor.agent.models import Section
 
 HEADING = re.compile(
-    r"^(?:SECTION|Section)?\s*(\d{1,2}\.\d{1,2}[A-Za-z]?)\.?\s+([A-Z][^\n]{0,150})$",
+    r"^(?:SECTION|Section)?\s*(\d{1,2}\.\d{1,2})\.?\s*([A-Z][^.\n]{0,150})",
     re.MULTILINE,
 )
-DEFINED_TERM = re.compile(r"^[“\"]([^”\"\n]{2,100})[”\"]\s+(?:shall\s+)?(?:means|has)", re.M)
+# “Term” means ... / “Term” has the meaning ... / “Term”: ...
+DEFINED_TERM = re.compile(r"^[“\"]([^”\"\n]{2,100})[”\"]\s*(?::|(?:shall\s+)?(?:means|has))", re.M)
 SPLIT_LONG_OVER = 20_000
 
 
@@ -75,6 +78,18 @@ def render_sections(sections: list[Section], max_chars: int | None = None) -> st
         body = sec.text if max_chars is None else sec.text[:max_chars]
         out.append(f"<section id={sec.id!r}>\n{body}\n</section>")
     return "\n\n".join(out)
+
+
+def family_text(sections: list[Section], section_id: str | None) -> str:
+    """Normalized text of a section and the definitions split out of it, so a quote cited
+    to "1.1" is found in "1.1 “Consolidated EBITDA”"."""
+    if not section_id:
+        return ""
+    return " ".join(
+        normalize(s.text)
+        for s in sections
+        if s.id == section_id or s.id.startswith(section_id + " ")
+    )
 
 
 def normalize(text: str) -> str:

@@ -4,6 +4,7 @@ In production the server runs as a subprocess over stdio. Tests hand the MCP cli
 server object itself, so the same tool calls run in-process.
 """
 
+import os
 import sys
 from contextlib import asynccontextmanager
 
@@ -26,8 +27,11 @@ class EdgarTools:
 
 @asynccontextmanager
 async def stdio_tools():
+    # The subprocess only inherits a minimal environment. Pass the SEC User-Agent through
+    # when it is set (CI sets it as a secret; locally the server reads .env itself).
+    env = {k: os.environ[k] for k in ("SEC_USER_AGENT",) if k in os.environ}
     params = StdioServerParameters(
-        command=sys.executable, args=["-m", "covenant_monitor.mcp_server.server"]
+        command=sys.executable, args=["-m", "covenant_monitor.mcp_server.server"], env=env
     )
     async with Client(params) as client:
         yield EdgarTools(client)

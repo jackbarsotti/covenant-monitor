@@ -15,7 +15,7 @@ from covenant_monitor.agent.models import (
     UsageRecord,
 )
 from covenant_monitor.agent.nodes import NODE_WRITES, Deps, check_citations, node
-from covenant_monitor.agent.ratios import applicable_threshold, compute
+from covenant_monitor.agent.ratios import applicable_threshold, component, compute
 from covenant_monitor.agent.sections import chunk_sections, split_sections
 from covenant_monitor.edgar import html_to_text
 
@@ -233,3 +233,78 @@ def test_picks_newest_credit_agreement_and_skips_amendments():
         hit("2026-06-01", "EX-99.1", "press-release-credit"),
     ]
     assert nodes._pick_agreement(hits)["url"].endswith("exhibit101-creditagreement.htm")
+
+
+# ---- fixes from the first live eval run ----
+
+
+def test_headings_glued_to_titles_are_found_past_the_table_of_contents():
+    text = (
+        "SECTION 9 NEGATIVE COVENANTS 72\n9.1. Financial Covenant 72\n9.2. Limitation on Liens 72\n"
+        "Section 7.08 Financial Covenant 137\n"
+        "1.1.Defined Terms.\n“Maximum Leverage Ratio”: 3.75 to 1.00.\n"
+        "9.1.Financial Covenant. Consolidated Leverage Ratio. Permit the ratio to exceed it.\n"
+        "9.2.Limitation on Liens. No liens.\n"
+        "Section 7.08Financial Covenant. As of the last day of any Test Period set forth below.\n"
+    )
+    sections = {s.id: s for s in split_sections(text)}
+    assert "Permit the ratio to exceed it" in sections["9.1"].text
+    assert "As of the last day of any Test Period" in sections["7.08"].text
+    assert len(sections["9.2"].text) < 40  # TOC lines don't swallow the body
+
+
+def test_colon_style_definitions_are_split():
+    filler = "x " * 12_000
+    text = (
+        f"1.1.Defined Terms.\n“Consolidated EBITDA”: {filler}\n"
+        "“Maximum Leverage Ratio”: 3.75 to 1.00.\n9.1.Financial Covenant. Shall not exceed."
+    )
+    ids = [s.id for s in split_sections(text)]
+    assert "1.1 “Maximum Leverage Ratio”" in ids
+
+
+def test_quotes_cited_to_a_parent_section_match_its_definitions():
+    sections = [
+        Section(id="1.1", heading="Defined Terms", text="Defined Terms."),
+        Section(
+            id="1.1 “Leverage Ratio”",
+            heading="Leverage Ratio",
+            text="“Leverage Ratio” means the ratio of Consolidated Total Debt to EBITDA.",
+        ),
+        Section(
+            id="7.1",
+            heading="Financial Covenant",
+            text="shall not permit the Leverage Ratio as of the last day of any fiscal "
+            "quarter to exceed 3.75 to 1.00",
+        ),
+    ]
+    extraction = good_extraction()
+    extraction.ebitda_addbacks = []
+    extraction.covenants[0].denominator.quote = "Consolidated Total Debt to EBITDA"
+    assert check_citations(extraction, sections) == []
+
+
+def test_ebitda_uses_the_largest_d_and_a_figure():
+    facts = dict(FACTS)
+    facts["DepreciationDepletionAndAmortization"] = _fact(
+        "DepreciationDepletionAndAmortization", 77.6
+    )  # depreciation only (CACI)
+    facts["DepreciationAndAmortization"] = _fact("DepreciationAndAmortization", 245.9)
+    value, used = component("ebitda", facts)
+    assert value == pytest.approx(800 + 245.9)
+    assert set(used) == {"OperatingIncomeLoss", "DepreciationAndAmortization"}
+
+    facts = {k: v for k, v in FACTS.items() if k != "DepreciationDepletionAndAmortization"}
+    facts["Depreciation"] = _fact("Depreciation", 120)
+    facts["AmortizationOfIntangibleAssets"] = _fact("AmortizationOfIntangibleAssets", 80)
+    assert component("ebitda", facts)[0] == 1000
+
+
+def test_earliest_threshold_level_applies_from_the_start():
+    extraction = good_extraction()
+    extraction.covenants[0].thresholds = [
+        CitedThreshold(ratio=4.0, effective_from="2026-06-30", section="7.1", quote="q"),
+        CitedThreshold(ratio=4.5, effective_from="2025-12-31", section="7.1", quote="q"),
+    ]
+    steps = nodes.normalize_schedules(extraction).covenants[0].thresholds
+    assert [(s.ratio, s.effective_from) for s in steps] == [(4.5, None), (4.0, "2026-06-30")]
