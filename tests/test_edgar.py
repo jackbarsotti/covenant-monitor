@@ -63,6 +63,16 @@ def test_newest_filing_wins_for_the_same_period():
     assert latest_annual_value(facts, "OperatingIncomeLoss")["val"] == 97
 
 
+def test_balance_sheet_instants_use_latest_10k_year_end():
+    rows = [
+        {"end": "2024-12-31", "val": 9, "filed": "2025-02-20", "form": "10-K"},
+        {"end": "2025-12-31", "val": 11, "filed": "2026-02-26", "form": "10-K"},
+        {"end": "2026-06-30", "val": 12, "filed": "2026-08-01", "form": "10-Q"},
+    ]
+    picked = latest_annual_value(_facts(rows), "OperatingIncomeLoss")
+    assert (picked["end"], picked["val"]) == ("2025-12-31", 11)
+
+
 def test_missing_concept_returns_none():
     assert latest_annual_value({"facts": {"us-gaap": {}}}, "OperatingIncomeLoss") is None
 

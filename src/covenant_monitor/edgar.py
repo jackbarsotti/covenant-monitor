@@ -192,26 +192,32 @@ async def get_document_text(client: SECClient, url: str, offset: int = 0) -> dic
 def latest_annual_value(facts: dict, concept: str) -> dict | None:
     """Most recent full-year value of a us-gaap concept, as reported in a 10-K.
 
-    A 10-K repeats prior years as comparatives and can include quarterly facts,
-    so we keep only roughly one-year periods and take the latest period end.
-    If the same period appears in more than one filing (next year's comparative,
-    or a 10-K/A), the newest filing wins because it may restate the number.
+    Income statement concepts are durations: a 10-K repeats prior years as comparatives and
+    can include quarterly facts, so we keep only roughly one-year periods and take the
+    latest period end. Balance sheet concepts (debt, cash) are instants with no start date;
+    for those we take the latest year-end value a 10-K reports. If the same period appears
+    in more than one filing (next year's comparative, or a 10-K/A), the newest filing wins
+    because it may restate the number.
     """
     usd = facts.get("facts", {}).get("us-gaap", {}).get(concept, {}).get("units", {}).get("USD")
     if not usd:
         return None
 
-    annual = []
+    annual, instants = [], []
     for f in usd:
-        if f.get("form") not in ANNUAL_FORMS or "start" not in f:
+        if f.get("form") not in ANNUAL_FORMS:
+            continue
+        if "start" not in f:
+            instants.append(f)
             continue
         days = (date.fromisoformat(f["end"]) - date.fromisoformat(f["start"])).days
         if 350 <= days <= 380:
             annual.append(f)
 
-    if not annual:
+    candidates = annual or instants
+    if not candidates:
         return None
-    return max(annual, key=lambda f: (f["end"], f["filed"]))
+    return max(candidates, key=lambda f: (f["end"], f["filed"]))
 
 
 async def get_annual_financials(client: SECClient, cik: int, concepts: list[str]) -> dict:
@@ -221,7 +227,7 @@ async def get_annual_financials(client: SECClient, cik: int, concepts: list[str]
         fact = latest_annual_value(facts, concept)
         values[concept] = fact and {
             "value": fact["val"],
-            "period_start": fact["start"],
+            "period_start": fact.get("start"),
             "period_end": fact["end"],
             "form": fact["form"],
             "filed": fact["filed"],

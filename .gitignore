@@ -16,3 +16,4 @@ wheels/
 # Secrets and local data
 .env
 data/cache/
+data/runs.sqlite*
