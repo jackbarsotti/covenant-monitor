@@ -32,6 +32,10 @@ def build_facts(
             "the covenant definitions"
         ),
     }
+    # Lets the memo say "everything was computed" (or not) with a fact behind it.
+    facts["covenants_not_computed"] = (
+        ", ".join(r.name for r in ratios if not r.computable) or "none"
+    )
     for r in ratios:
         p = f"c{r.covenant_index}"
         cov = extraction.covenants[r.covenant_index]

@@ -66,6 +66,7 @@ async def test_happy_path_drafts_a_cited_memo(tools, edgar, tmp_path):
     assert "headroom of +0.75x" in memo
     assert "## Sources" in memo and "`c0.ratio`: 3.00x" in memo
     assert "add-backs are not applied" in llm.calls["draft_memo"][0]["prompt"]
+    assert '"covenants_not_computed": "none"' in llm.calls["draft_memo"][0]["prompt"]
     usage = out["usage"]
     model_nodes = {n for n, row in usage.items() if n != "totals" and row["calls"]}
     assert model_nodes == {"map_sections", "extract_covenants", "review", "draft_memo"}
