@@ -9,6 +9,7 @@ from agent_fakes import (
     AGREEMENT_HTML,
     AGREEMENT_URL,
     FACTS_URL,
+    GOLDEN,
     FakeLLM,
     companyfacts,
     good_extraction,
@@ -29,61 +30,9 @@ from covenant_monitor.evals.scoring import (
     same_schedule,
     section_number,
 )
-from covenant_monitor.golden import GoldenCompany, ThresholdStep
 from covenant_monitor.golden import TestFrequency as Frequency
+from covenant_monitor.golden import ThresholdStep
 from covenant_monitor.mcp_server.server import build_server
-
-GOLDEN = GoldenCompany.model_validate(
-    {
-        "provenance": "hand",
-        "company": {"ticker": "BSX", "cik": 885725, "name": "Example Corp"},
-        "agreement": {
-            "accession": "0000000001-26-000001",
-            "exhibit": "EX-10.1",
-            "url": AGREEMENT_URL,
-            "agreement_date": "2026-01-01",
-        },
-        "covenants": [
-            {
-                "type": "max_leverage",
-                "description": "Leverage Ratio",
-                "thresholds": [{"ratio": 3.75, "effective_from": None}],
-                "test_frequency": "quarterly",
-                "section": "Section 7.1",
-                "quote": "to exceed 3.75 to 1.00",
-            }
-        ],
-        "ebitda_addbacks": [
-            {"name": "Restructuring charges", "section": "Section 1.1", "cap": "10%"}
-        ],
-        "latest_fiscal_year": {
-            "period_end": "2025-12-31",
-            "inputs": {"ebitda": {"value": 1000, "source": "made up"}},
-            "expected": [
-                {"covenant": "max_leverage", "ratio": 3.0, "threshold": 3.75, "headroom": 0.75}
-            ],
-        },
-        "questions": [
-            {
-                "question": "What is the maximum Leverage Ratio?",
-                "answer": "3.75",
-                "section": "Section 7.1",
-            },
-            {
-                "question": "How is the Leverage Ratio defined?",
-                "answer": "debt to EBITDA",
-                "section": "Section 1.1",
-            },
-            {
-                "question": "What liens are allowed?",
-                "answer": "Permitted Liens",
-                "section": "Section 7.2",
-            },
-            {"question": "What was the actual ratio at year end?", "trap": True},
-            {"question": "What rate do the 2030 notes pay?", "trap": True},
-        ],
-    }
-)
 
 ANSWERS = {
     "What is the maximum Leverage Ratio?": ("7.1", "to exceed 3.75 to 1.00"),

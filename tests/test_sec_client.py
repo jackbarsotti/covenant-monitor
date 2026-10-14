@@ -125,9 +125,16 @@ def test_retry_after_accepts_seconds_and_http_dates():
 
 def test_user_agent_requires_name_and_email(monkeypatch):
     monkeypatch.setattr("covenant_monitor.sec_client.load_dotenv", lambda: None)
-    for bad in ("", "no-email", "jane@example.com", "Jane Doe"):
+    cases = {
+        "": "empty",
+        "no-email": "no email",
+        "Sam Roe": "no email",
+        "sam@roe.dev": "needs a name",
+    }
+    for bad, problem in cases.items():
         monkeypatch.setenv("SEC_USER_AGENT", bad)
-        with pytest.raises(RuntimeError):
+        with pytest.raises(RuntimeError, match=problem) as err:
             user_agent()
+        assert bad == "" or bad not in str(err.value)  # never echo the value
     monkeypatch.setenv("SEC_USER_AGENT", "Jane Doe jane@example.com")
     assert user_agent() == "Jane Doe jane@example.com"

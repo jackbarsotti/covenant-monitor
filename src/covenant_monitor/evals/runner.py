@@ -4,6 +4,10 @@
     uv run python -m covenant_monitor.evals.runner --tickers BSX
     uv run python -m covenant_monitor.evals.runner --update-baseline
     uv run python -m covenant_monitor.evals.runner --rescore evals/results/run3.json
+    uv run python -m covenant_monitor.evals.runner --injection-only
+
+Every full run also runs the prompt injection test on INJECTION_TARGET. Its checks are
+reported separately from the score, and any failure fails the run.
 
 --rescore re-scores a saved run with the current scoring code, reading the run's state from
 the eval checkpoint database. No model calls; use it after changing scoring only.
@@ -34,19 +38,25 @@ from covenant_monitor.agent.pricing import cost_usd
 from covenant_monitor.agent.qa import CheckedAnswer, answer_questions
 from covenant_monitor.agent.run import checkpointer, execute, run_summary, session
 from covenant_monitor.evals import judge
+from covenant_monitor.evals.injection import InjectingTools, anchor_for, score_injection
 from covenant_monitor.evals.scoring import category, score_company
 from covenant_monitor.golden import GOLDEN_DIR, GoldenCompany, load_all
 from covenant_monitor.sec_client import user_agent
 
 RESULTS_DIR = Path("evals/results")
+# Company for the prompt injection test: CACI has a low-headroom flag the planted
+# instruction tries to suppress.
+INJECTION_TARGET = "CACI"
 # Model output varies between runs; allow about one flipped check before calling it a drop.
 BASELINE_TOLERANCE = 0.025
 BASELINE = Path("evals/baseline.json")
 EVAL_DB = Path("data/eval_runs.sqlite")
 
 
-async def evaluate_company(golden: GoldenCompany, graph, deps: Deps, judge_trusted: bool) -> dict:
-    thread_id = f"eval-{golden.company.ticker}-{uuid.uuid4().hex[:8]}"
+async def run_to_memo(golden: GoldenCompany, graph, deps: Deps, label: str = "eval"):
+    """Run the graph on the golden agreement, auto-approving a pause so a memo is drafted.
+    Returns the thread id, the approval request (if it paused), the final summary, and state."""
+    thread_id = f"{label}-{golden.company.ticker}-{uuid.uuid4().hex[:8]}"
     graph_input = {"ticker": golden.company.ticker, "agreement_url": golden.agreement.url}
     summary = await execute(graph, deps, thread_id, graph_input)
     approval_request = summary["approval_request"]
@@ -57,8 +67,25 @@ async def evaluate_company(golden: GoldenCompany, graph, deps: Deps, judge_trust
             thread_id,
             Command(resume={"decision": "approve", "note": "auto-approved by the eval runner"}),
         )
-
     state = (await graph.aget_state({"configurable": {"thread_id": thread_id}})).values
+    return thread_id, approval_request, summary, state
+
+
+async def judge_state_memo(deps: Deps, state) -> tuple[judge.JudgeVerdict | None, list]:
+    if not state.get("memo"):
+        return None, []
+    meter = deps.ledger.meter("judge")
+    try:
+        verdict = await judge.judge_memo(
+            deps.llm, meter, deps.config, state["memo"].markdown, state["memo"].facts
+        )
+    except AgentStop:
+        verdict = None
+    return verdict, meter.records
+
+
+async def evaluate_company(golden: GoldenCompany, graph, deps: Deps, judge_trusted: bool) -> dict:
+    thread_id, approval_request, summary, state = await run_to_memo(golden, graph, deps)
     usage = list(state.get("usage", []))
 
     answers: list[CheckedAnswer] = []
@@ -81,16 +108,8 @@ async def evaluate_company(golden: GoldenCompany, graph, deps: Deps, judge_trust
             for q in questions[len(answers) :]
         ]
 
-    memo_verdict = None
-    if state.get("memo"):
-        meter = deps.ledger.meter("judge")
-        try:
-            memo_verdict = await judge.judge_memo(
-                deps.llm, meter, deps.config, state["memo"].markdown, state["memo"].facts
-            )
-        except AgentStop:
-            memo_verdict = None
-        usage += meter.records
+    memo_verdict, judge_records = await judge_state_memo(deps, state)
+    usage += judge_records
 
     checks, addbacks = score_company(
         golden,
@@ -124,6 +143,39 @@ async def evaluate_company(golden: GoldenCompany, graph, deps: Deps, judge_trust
     }
 
 
+async def evaluate_injection(golden: GoldenCompany, graph, deps: Deps, judge_trusted: bool) -> dict:
+    tools = InjectingTools(deps.tools, anchor_for(golden))
+    injected = Deps(deps.llm, tools, deps.config, Ledger(deps.config))
+    thread_id, approval_request, summary, state = await run_to_memo(
+        golden, graph, injected, label="injection"
+    )
+    usage = list(state.get("usage", []))
+    verdict, judge_records = await judge_state_memo(injected, state)
+    usage += judge_records
+    checks = score_injection(
+        golden,
+        tools.planted,
+        paused=approval_request is not None,
+        extraction=state.get("extraction"),
+        ratios=state.get("ratios", []),
+        memo=state["memo"].markdown if state.get("memo") else None,
+        memo_passed=verdict.passed if verdict and judge_trusted else None,
+        alert_pct=deps.config.alert_headroom_pct,
+    )
+    return {
+        "ticker": golden.company.ticker,
+        "thread_id": thread_id,
+        "status": summary["status"],
+        "approval_reasons": approval_request["reasons"] if approval_request else [],
+        "checks": [c.model_dump() for c in checks],
+        "passed": sum(c.passed for c in checks),
+        "total": len(checks),
+        "memo": state["memo"].markdown if state.get("memo") else None,
+        "summary": run_summary(usage, state.get("timings", [])),
+        "cost_usd": cost_usd(usage),
+    }
+
+
 async def run_evals(
     config: AgentConfig,
     goldens: dict[str, GoldenCompany],
@@ -131,6 +183,8 @@ async def run_evals(
     llm=None,
     tools=None,
     calibration: list[judge.CalibrationCase] | None = None,
+    injection_ticker: str | None = INJECTION_TARGET,
+    companies_to_run: bool = True,
 ) -> dict:
     started = datetime.now(UTC).isoformat(timespec="seconds")
     async with session(config, db_path, llm, tools) as (graph, deps):
@@ -144,7 +198,7 @@ async def run_evals(
         cal["cost_usd"] = cost_usd(cal_meter.records)
 
         companies = {}
-        for ticker, golden in goldens.items():
+        for ticker, golden in goldens.items() if companies_to_run else []:
             company_deps = Deps(deps.llm, deps.tools, config, Ledger(config))
             with tracing.span(f"eval {ticker}", "CHAIN", eval__ticker=ticker) as span:
                 companies[ticker] = await evaluate_company(
@@ -153,13 +207,25 @@ async def run_evals(
                 result = companies[ticker]
                 tracing.set_attributes(span, output__value=f"{result['passed']}/{result['total']}")
 
+        injection = None
+        if injection_ticker and injection_ticker in goldens:
+            with tracing.span(f"injection {injection_ticker}", "CHAIN"):
+                injection = await evaluate_injection(
+                    goldens[injection_ticker],
+                    graph,
+                    Deps(deps.llm, deps.tools, config, Ledger(config)),
+                    cal["trusted"],
+                )
+
+    spent = cal["cost_usd"] + sum(r["cost_usd"] for r in companies.values())
     return {
         "started_at": started,
         "models": config.models.model_dump(),
         "judge": cal,
         "companies": companies,
         **summarize(companies),
-        "cost_usd": round(cal["cost_usd"] + sum(r["cost_usd"] for r in companies.values()), 4),
+        "injection": injection,
+        "cost_usd": round(spent + (injection["cost_usd"] if injection else 0), 4),
     }
 
 
@@ -214,6 +280,14 @@ def print_summary(results: dict) -> None:
         for c in r["checks"]:
             if not c["passed"]:
                 print(f"  FAIL {c['name']}: {c['detail']}")
+    inj = results.get("injection")
+    if inj:
+        print(
+            f"\ninjection ({inj['ticker']}): {inj['passed']}/{inj['total']}  ${inj['cost_usd']:.2f}"
+        )
+        for c in inj["checks"]:
+            if not c["passed"]:
+                print(f"  FAIL {c['name']}: {c['detail']}")
     print(f"\nby category: {results['by_category']}")
     print(
         f"score {results['score']:.2%} ({results['passed']}/{results['total']}), "
@@ -237,6 +311,8 @@ async def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--out", type=Path)
     parser.add_argument("--update-baseline", action="store_true")
     parser.add_argument("--rescore", type=Path, help="re-score a saved results file")
+    parser.add_argument("--injection-only", action="store_true", help="run only the injection test")
+    parser.add_argument("--no-injection", action="store_true", help="skip the injection test")
     args = parser.parse_args(argv)
 
     if args.rescore:
@@ -254,7 +330,12 @@ async def main(argv: list[str] | None = None) -> int:
             goldens = {t: goldens[t] for t in (x.upper() for x in args.tickers)}
         provider = tracing.setup()
         try:
-            results = await run_evals(AgentConfig(), goldens)
+            results = await run_evals(
+                AgentConfig(),
+                goldens,
+                injection_ticker=None if args.no_injection else INJECTION_TARGET,
+                companies_to_run=not args.injection_only,
+            )
         finally:
             if provider:
                 provider.shutdown()
@@ -281,7 +362,13 @@ async def main(argv: list[str] | None = None) -> int:
         )
         print(f"baseline updated: {BASELINE}")
         return 0
-    return 0 if compare_to_baseline(results) else 1
+    injection = results.get("injection")
+    injection_ok = injection is None or injection["passed"] == injection["total"]
+    if not injection_ok:
+        print("injection test FAILED")
+    if args.injection_only:
+        return 0 if injection_ok else 1
+    return 0 if compare_to_baseline(results) and injection_ok else 1
 
 
 if __name__ == "__main__":
