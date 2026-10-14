@@ -289,7 +289,11 @@ def review_fields(extraction: Extraction) -> list[dict[str, Any]]:
     for i, c in enumerate(extraction.covenants):
         fields.append({"id": f"c{i}.type", "value": c.type.value, **_cite(c.type)})
         for j, t in enumerate(c.thresholds):
-            value = f"{t.ratio} effective from {t.effective_from or 'closing'}"
+            value = (
+                f"{t.ratio} effective from {t.effective_from}"
+                if t.effective_from
+                else f"{t.ratio} (initial level, in effect from the first test date)"
+            )
             fields.append({"id": f"c{i}.threshold{j}", "value": value, **_cite(t)})
         freq = c.test_frequency
         fields.append({"id": f"c{i}.test_frequency", "value": freq.value, **_cite(freq)})

@@ -308,3 +308,8 @@ def test_earliest_threshold_level_applies_from_the_start():
     ]
     steps = nodes.normalize_schedules(extraction).covenants[0].thresholds
     assert [(s.ratio, s.effective_from) for s in steps] == [(4.5, None), (4.0, "2026-06-30")]
+
+
+def test_reviewer_sees_the_initial_level_without_a_closing_date_claim():
+    fields = {f["id"]: f["value"] for f in nodes.review_fields(good_extraction())}
+    assert fields["c0.threshold0"] == "3.75 (initial level, in effect from the first test date)"

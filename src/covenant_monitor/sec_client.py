@@ -42,9 +42,16 @@ def user_agent() -> str:
     load_dotenv()
     ua = os.getenv("SEC_USER_AGENT", "").strip()
     if not re.fullmatch(r"\S.*\s+\S+@\S+\.\S+", ua):
+        # Say what's wrong without echoing the value, which may be a secret in CI.
+        if not ua:
+            problem = "it is empty or not set"
+        elif not re.search(r"\S+@\S+\.\S+", ua):
+            problem = "it has no email address"
+        else:
+            problem = "it needs a name before the email"
         raise RuntimeError(
-            'SEC_USER_AGENT must be a name and an email, e.g. "Jane Doe jane@example.com". '
-            "Set it in .env locally, or as a repository secret in CI."
+            f'SEC_USER_AGENT must be a name and an email, e.g. "Jane Doe jane@example.com"; '
+            f"{problem}. Set it in .env locally, or as a repository secret in CI."
         )
     return ua
 
